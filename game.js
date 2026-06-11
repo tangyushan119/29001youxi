@@ -9,10 +9,10 @@ class SurvivalGame {
         this.resizeCanvas();
         
         this.gameState = {
-            health: 100,
-            hunger: 80,
-            thirst: 90,
-            stamina: 70,
+            health: 200,
+            hunger: 200,
+            thirst: 200,
+            stamina: 200,
             day: 1,
             isRunning: true,
             isPaused: false,
@@ -299,8 +299,8 @@ class SurvivalGame {
     }
 
     regenerateStamina() {
-        if (this.gameState.stamina < 100) {
-            this.gameState.stamina = Math.min(100, this.gameState.stamina + 0.1);
+        if (this.gameState.stamina < 200) {
+            this.gameState.stamina = Math.min(200, this.gameState.stamina + 0.2);
         }
     }
 
@@ -391,12 +391,12 @@ class SurvivalGame {
     startStatusDecay() {
         this.statusDecayInterval = setInterval(() => {
             if (!this.gameState.isPaused && this.gameState.isRunning) {
-                this.gameState.hunger = Math.max(0, this.gameState.hunger - 0.1);
-                this.gameState.thirst = Math.max(0, this.gameState.thirst - 0.15);
+                this.gameState.hunger = Math.max(0, this.gameState.hunger - 0.2);
+                this.gameState.thirst = Math.max(0, this.gameState.thirst - 0.3);
                 this.regenerateStamina();
                 
                 if (this.gameState.hunger <= 0 || this.gameState.thirst <= 0) {
-                    this.gameState.health = Math.max(0, this.gameState.health - 0.5);
+                    this.gameState.health = Math.max(0, this.gameState.health - 1.0);
                 }
                 
                 this.updateStatusBars();

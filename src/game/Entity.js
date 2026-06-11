@@ -88,10 +88,10 @@ class PlayerEntity extends Entity {
         this.speed = options.speed || 4;
         
         this.stats = {
-            health: options.health || 100,
-            hunger: options.hunger || 80,
-            thirst: options.thirst || 90,
-            stamina: options.stamina || 70
+            health: options.health || 200,
+            hunger: options.hunger || 200,
+            thirst: options.thirst || 200,
+            stamina: options.stamina || 200
         };
         
         this.inventory = options.inventory || {
@@ -130,8 +130,8 @@ class PlayerEntity extends Entity {
     }
 
     regenerateStamina() {
-        if (this.stats.stamina < 100) {
-            this.stats.stamina = Math.min(100, this.stats.stamina + 0.1);
+        if (this.stats.stamina < 200) {
+            this.stats.stamina = Math.min(200, this.stats.stamina + 0.2);
         }
     }
 

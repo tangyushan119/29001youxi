@@ -235,10 +235,10 @@ class GameScene extends Scene {
                 height: 48,
                 direction: 'down',
                 speed: 4,
-                health: 100,
-                hunger: 80,
-                thirst: 90,
-                stamina: 70,
+                health: 200,
+                hunger: 200,
+                thirst: 200,
+                stamina: 200,
                 inventory: {
                     seeds: 5,
                     food: 3,
@@ -251,8 +251,8 @@ class GameScene extends Scene {
         }
 
         this.player.update = (deltaTime) => {
-            if (this.player.stamina < 100) {
-                this.player.stamina = Math.min(100, this.player.stamina + 0.1);
+            if (this.player.stamina < 200) {
+                this.player.stamina = Math.min(200, this.player.stamina + 0.2);
             }
         };
 

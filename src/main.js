@@ -113,11 +113,11 @@ class SurvivalGame {
                 const player = this.gameScene.player;
                 
                 if (player) {
-                    player.hunger = Math.max(0, player.hunger - 0.1);
-                    player.thirst = Math.max(0, player.thirst - 0.15);
+                    player.hunger = Math.max(0, player.hunger - 0.2);
+                    player.thirst = Math.max(0, player.thirst - 0.3);
                     
                     if (player.hunger <= 0 || player.thirst <= 0) {
-                        player.health = Math.max(0, player.health - 0.5);
+                        player.health = Math.max(0, player.health - 1.0);
                     }
                     
                     this.updateStatusBars();
