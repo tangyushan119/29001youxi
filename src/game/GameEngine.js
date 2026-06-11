@@ -12,16 +12,8 @@ class GameEngine {
             ...config
         };
 
-        this.canvas = document.getElementById(this.config.canvasId);
-        if (!this.canvas) {
-            throw new Error(`Canvas element with id "${this.config.canvasId}" not found`);
-        }
-
-        this.resourceCache = new ResourceCache();
-        this.sceneCache = new SceneCache();
-        this.renderEngine = new RenderEngine(this.canvas);
-        this.inputController = new InputController();
-        this.uiManager = new UIManager();
+        this.isInitialized = false;
+        this.initializationPromise = null;
 
         this.gameState = {
             isRunning: false,
@@ -40,13 +32,49 @@ class GameEngine {
 
         this.scenes = new Map();
         this.systems = [];
-        
-        this.setupEventListeners();
-        this.setupDefaultBindings();
+        this._eventListeners = new Map();
+
+        this.initializationPromise = this.initializeCore();
+    }
+
+    async initializeCore() {
+        try {
+            this.canvas = document.getElementById(this.config.canvasId);
+            if (!this.canvas) {
+                throw new Error(`Canvas element with id "${this.config.canvasId}" not found`);
+            }
+
+            this.resourceCache = new ResourceCache();
+            this.sceneCache = new SceneCache();
+            this.inputController = new InputController();
+            this.uiManager = new UIManager();
+
+            await this.initializeRenderEngine();
+
+            this.setupEventListeners();
+            this.setupDefaultBindings();
+
+            this.isInitialized = true;
+            this.emit('engineReady');
+            
+            return true;
+        } catch (error) {
+            console.error('GameEngine initialization failed:', error);
+            throw error;
+        }
+    }
+
+    async initializeRenderEngine() {
+        return new Promise((resolve) => {
+            this.renderEngine = new RenderEngine(this.canvas);
+            this.handleResize();
+            resolve();
+        });
     }
 
     setupEventListeners() {
         window.addEventListener('resize', () => this.handleResize());
+        this.handleResize();
     }
 
     setupDefaultBindings() {

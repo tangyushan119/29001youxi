@@ -9,22 +9,30 @@ class SurvivalGame {
         this.init();
     }
 
-    init() {
+    async init() {
         this.engine = new GameEngine({
             canvasId: 'gameCanvas',
             debug: false
         });
 
-        this.gameScene = new GameScene('main');
-        this.engine.addScene('main', this.gameScene);
+        try {
+            await this.engine.initializationPromise;
+            
+            this.gameScene = new GameScene('main');
+            this.engine.addScene('main', this.gameScene);
 
-        this.setupEventListeners();
-        this.setupUIButtons();
-        
-        this.engine.start();
-        this.engine.setScene('main');
-        
-        this.startStatusDecay();
+            this.setupEventListeners();
+            this.setupUIButtons();
+            
+            this.engine.setScene('main');
+            this.engine.start();
+            
+            this.startStatusDecay();
+            
+            console.log('Game initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize game:', error);
+        }
     }
 
     setupEventListeners() {
@@ -63,6 +71,10 @@ class SurvivalGame {
         this.engine.on('gameStopped', () => {
             console.log('游戏停止');
         });
+
+        this.engine.on('engineReady', () => {
+            console.log('Engine ready');
+        });
     }
 
     setupUIButtons() {
@@ -100,20 +112,23 @@ class SurvivalGame {
             if (!this.engine.gameState.isPaused && this.engine.gameState.isRunning) {
                 const player = this.gameScene.player;
                 
-                player.hunger = Math.max(0, player.hunger - 0.1);
-                player.thirst = Math.max(0, player.thirst - 0.15);
-                
-                if (player.hunger <= 0 || player.thirst <= 0) {
-                    player.health = Math.max(0, player.health - 0.5);
+                if (player) {
+                    player.hunger = Math.max(0, player.hunger - 0.1);
+                    player.thirst = Math.max(0, player.thirst - 0.15);
+                    
+                    if (player.hunger <= 0 || player.thirst <= 0) {
+                        player.health = Math.max(0, player.health - 0.5);
+                    }
+                    
+                    this.updateStatusBars();
                 }
-                
-                this.updateStatusBars();
             }
         }, 1000);
     }
 
     updateStatusBars() {
         const player = this.gameScene.player;
+        if (!player) return;
         
         document.querySelector('.health-fill')?.style.setProperty('width', `${player.health}%`);
         document.querySelector('.hunger-fill')?.style.setProperty('width', `${player.hunger}%`);
@@ -125,10 +140,10 @@ class SurvivalGame {
         const thirstValue = document.querySelector('.thirst-fill')?.parentElement?.nextElementSibling;
         const staminaValue = document.querySelector('.stamina-fill')?.parentElement?.nextElementSibling;
         
-        healthValue.textContent = Math.floor(player.health);
-        hungerValue.textContent = Math.floor(player.hunger);
-        thirstValue.textContent = Math.floor(player.thirst);
-        staminaValue.textContent = Math.floor(player.stamina);
+        if (healthValue) healthValue.textContent = Math.floor(player.health);
+        if (hungerValue) hungerValue.textContent = Math.floor(player.hunger);
+        if (thirstValue) thirstValue.textContent = Math.floor(player.thirst);
+        if (staminaValue) staminaValue.textContent = Math.floor(player.stamina);
     }
 
     updateDayDisplay(day) {
