@@ -32,24 +32,26 @@ class GameEngine {
 
         this.scenes = new Map();
         this.systems = [];
-        this._eventListeners = new Map();
+        this._eventListeners = null;
 
         this.initializationPromise = this.initializeCore();
     }
 
     async initializeCore() {
         try {
+            console.log('Initializing GameEngine...');
+            
             this.canvas = document.getElementById(this.config.canvasId);
             if (!this.canvas) {
                 throw new Error(`Canvas element with id "${this.config.canvasId}" not found`);
             }
 
+            await this.initializeRenderEngine();
+
             this.resourceCache = new ResourceCache();
             this.sceneCache = new SceneCache();
             this.inputController = new InputController();
             this.uiManager = new UIManager();
-
-            await this.initializeRenderEngine();
 
             this.setupEventListeners();
             this.setupDefaultBindings();
@@ -57,6 +59,7 @@ class GameEngine {
             this.isInitialized = true;
             this.emit('engineReady');
             
+            console.log('GameEngine initialized successfully');
             return true;
         } catch (error) {
             console.error('GameEngine initialization failed:', error);
@@ -65,10 +68,21 @@ class GameEngine {
     }
 
     async initializeRenderEngine() {
-        return new Promise((resolve) => {
-            this.renderEngine = new RenderEngine(this.canvas);
-            this.handleResize();
-            resolve();
+        return new Promise((resolve, reject) => {
+            try {
+                if (!this.canvas) {
+                    reject(new Error('Canvas not found, cannot initialize RenderEngine'));
+                    return;
+                }
+                
+                this.renderEngine = new RenderEngine(this.canvas);
+                this.handleResize();
+                console.log('RenderEngine initialized successfully');
+                resolve();
+            } catch (error) {
+                console.error('Failed to initialize RenderEngine:', error);
+                reject(error);
+            }
         });
     }
 
@@ -78,6 +92,11 @@ class GameEngine {
     }
 
     setupDefaultBindings() {
+        if (!this.inputController) {
+            console.error('InputController not initialized, cannot setup bindings');
+            return;
+        }
+
         this.inputController.bind('KeyW', () => this.onMove('up'), 'down');
         this.inputController.bind('KeyS', () => this.onMove('down'), 'down');
         this.inputController.bind('KeyA', () => this.onMove('left'), 'down');
@@ -95,7 +114,17 @@ class GameEngine {
     }
 
     handleResize() {
+        if (!this.renderEngine || !this.canvas) {
+            console.error('RenderEngine or Canvas not initialized, cannot handle resize');
+            return;
+        }
+
         const wrapper = this.canvas.parentElement;
+        if (!wrapper) {
+            console.warn('Canvas has no parent element');
+            return;
+        }
+
         const rect = wrapper.getBoundingClientRect();
         const padding = 20;
         this.renderEngine.resize(rect.width - padding * 2, rect.height - padding * 2);
@@ -127,14 +156,20 @@ class GameEngine {
         this.gameState.isPaused = !this.gameState.isPaused;
         this.emit('pauseChanged', { isPaused: this.gameState.isPaused });
         
-        if (this.gameState.isPaused) {
-            this.renderEngine.pause();
-        } else {
-            this.renderEngine.resume();
+        if (this.renderEngine) {
+            if (this.gameState.isPaused) {
+                this.renderEngine.pause();
+            } else {
+                this.renderEngine.resume();
+            }
         }
     }
 
     addScene(name, scene) {
+        if (!name || !scene) {
+            console.error('Invalid scene name or scene object');
+            return;
+        }
         this.scenes.set(name, scene);
     }
 
@@ -150,26 +185,49 @@ class GameEngine {
         }
         
         if (this.gameState.currentScene) {
-            this.gameState.currentScene.unload();
+            try {
+                this.gameState.currentScene.unload();
+            } catch (error) {
+                console.error('Error unloading current scene:', error);
+            }
         }
         
         this.gameState.currentScene = this.scenes.get(name);
-        this.gameState.currentScene.load();
+        
+        try {
+            this.gameState.currentScene.load();
+        } catch (error) {
+            console.error('Error loading scene:', error);
+            throw error;
+        }
         
         this.emit('sceneChanged', { scene: name });
     }
 
     addSystem(system) {
+        if (!system) {
+            console.error('Invalid system object');
+            return;
+        }
         this.systems.push(system);
         system.init(this);
     }
 
     addEntity(entity) {
+        if (!entity || !entity.id) {
+            console.error('Invalid entity object');
+            return;
+        }
         this.gameState.entities.set(entity.id, entity);
         this.emit('entityAdded', { entity });
     }
 
     removeEntity(entityId) {
+        if (!entityId) {
+            console.error('Invalid entity ID');
+            return;
+        }
+        
         const entity = this.gameState.entities.get(entityId);
         if (entity) {
             this.gameState.entities.delete(entityId);
@@ -178,10 +236,24 @@ class GameEngine {
     }
 
     getEntity(entityId) {
+        if (!entityId) {
+            console.error('Invalid entity ID');
+            return null;
+        }
         return this.gameState.entities.get(entityId);
     }
 
     start() {
+        if (!this.isInitialized) {
+            console.error('GameEngine not initialized, cannot start');
+            throw new Error('GameEngine not initialized');
+        }
+
+        if (!this.renderEngine) {
+            console.error('RenderEngine not initialized, cannot start');
+            throw new Error('RenderEngine not initialized');
+        }
+
         this.gameState.isRunning = true;
         this.renderEngine.start();
         this.gameLoop();
@@ -191,7 +263,10 @@ class GameEngine {
 
     stop() {
         this.gameState.isRunning = false;
-        this.renderEngine.stop();
+        
+        if (this.renderEngine) {
+            this.renderEngine.stop();
+        }
         
         this.emit('gameStopped');
     }
@@ -205,7 +280,9 @@ class GameEngine {
             this.update(deltaTime);
         }
 
-        this.inputController.update();
+        if (this.inputController) {
+            this.inputController.update();
+        }
         
         requestAnimationFrame(() => this.gameLoop());
     }
@@ -214,17 +291,29 @@ class GameEngine {
         this.updateTime(deltaTime);
         
         for (const system of this.systems) {
-            system.update(deltaTime);
+            try {
+                system.update(deltaTime);
+            } catch (error) {
+                console.error('Error updating system:', error);
+            }
         }
         
         for (const entity of this.gameState.entities.values()) {
             if (entity.update) {
-                entity.update(deltaTime);
+                try {
+                    entity.update(deltaTime);
+                } catch (error) {
+                    console.error('Error updating entity:', error);
+                }
             }
         }
         
         if (this.gameState.currentScene && this.gameState.currentScene.update) {
-            this.gameState.currentScene.update(deltaTime);
+            try {
+                this.gameState.currentScene.update(deltaTime);
+            } catch (error) {
+                console.error('Error updating scene:', error);
+            }
         }
         
         this.emit('update', { deltaTime });
@@ -256,6 +345,11 @@ class GameEngine {
     }
 
     on(event, callback) {
+        if (!event || typeof callback !== 'function') {
+            console.error('Invalid event name or callback');
+            return;
+        }
+        
         if (!this._eventListeners) {
             this._eventListeners = new Map();
         }
@@ -287,20 +381,36 @@ class GameEngine {
     }
 
     async loadResource(url, key, options = {}) {
+        if (!this.resourceCache) {
+            console.error('ResourceCache not initialized');
+            throw new Error('ResourceCache not initialized');
+        }
         return await this.resourceCache.loadAndCache(url, key, options);
     }
 
     getCachedResource(key) {
+        if (!this.resourceCache) {
+            console.error('ResourceCache not initialized');
+            return null;
+        }
         return this.resourceCache.get(key);
     }
 
     destroy() {
         this.stop();
         
-        this.resourceCache.clear();
-        this.sceneCache.clear();
-        this.inputController.destroy();
-        this.uiManager.destroy();
+        if (this.resourceCache) {
+            this.resourceCache.clear();
+        }
+        if (this.sceneCache) {
+            this.sceneCache.clear();
+        }
+        if (this.inputController) {
+            this.inputController.destroy();
+        }
+        if (this.uiManager) {
+            this.uiManager.destroy();
+        }
         
         window.removeEventListener('resize', () => this.handleResize());
         
@@ -310,7 +420,9 @@ class GameEngine {
     }
 
     clearSceneCache() {
-        this.sceneCache.clear();
+        if (this.sceneCache) {
+            this.sceneCache.clear();
+        }
     }
 }
 

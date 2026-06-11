@@ -5,12 +5,15 @@ class SurvivalGame {
     constructor() {
         this.engine = null;
         this.gameScene = null;
+        this.statusDecayInterval = null;
         
         this.init();
     }
 
     async init() {
         try {
+            console.log('Initializing Survival Game...');
+            
             this.engine = new GameEngine({
                 canvasId: 'gameCanvas',
                 debug: false
@@ -25,6 +28,7 @@ class SurvivalGame {
             console.log('RenderEngine initialized successfully');
             
             this.gameScene = new GameScene('main');
+            this.gameScene.init(this.engine);
             this.engine.addScene('main', this.gameScene);
 
             this.setupEventListeners();
@@ -38,28 +42,44 @@ class SurvivalGame {
             console.log('Game initialized successfully');
         } catch (error) {
             console.error('Failed to initialize game:', error);
+            this.showErrorModal(error);
         }
     }
 
     setupEventListeners() {
+        if (!this.engine) {
+            console.error('Engine not initialized, cannot setup event listeners');
+            return;
+        }
+
         this.engine.on('playerMove', (data) => {
-            this.gameScene.movePlayer(data.direction);
+            if (this.gameScene) {
+                this.gameScene.movePlayer(data.direction);
+            }
         });
 
         this.engine.on('playerInteract', () => {
-            this.gameScene.interact();
+            if (this.gameScene) {
+                this.gameScene.interact();
+            }
         });
 
         this.engine.on('openInventory', () => {
-            this.gameScene.openInventory();
+            if (this.gameScene) {
+                this.gameScene.openInventory();
+            }
         });
 
         this.engine.on('openCraft', () => {
-            this.gameScene.openCraft();
+            if (this.gameScene) {
+                this.gameScene.openCraft();
+            }
         });
 
         this.engine.on('openMap', () => {
-            this.gameScene.openMap();
+            if (this.gameScene) {
+                this.gameScene.openMap();
+            }
         });
 
         this.engine.on('pauseChanged', (data) => {
@@ -93,17 +113,27 @@ class SurvivalGame {
         const btnCraft = document.getElementById('btnCraft');
         const btnMap = document.getElementById('btnMap');
 
-        btnMoveUp?.addEventListener('click', () => this.gameScene.movePlayer('up'));
-        btnMoveDown?.addEventListener('click', () => this.gameScene.movePlayer('down'));
-        btnMoveLeft?.addEventListener('click', () => this.gameScene.movePlayer('left'));
-        btnMoveRight?.addEventListener('click', () => this.gameScene.movePlayer('right'));
-        btnInteract?.addEventListener('click', () => this.gameScene.interact());
-        btnInventory?.addEventListener('click', () => this.gameScene.openInventory());
-        btnCraft?.addEventListener('click', () => this.gameScene.openCraft());
-        btnMap?.addEventListener('click', () => this.gameScene.openMap());
+        const safeBind = (element, event, handler) => {
+            if (element) {
+                element.addEventListener(event, handler);
+            } else {
+                console.warn(`Button element not found for binding: ${event}`);
+            }
+        };
+
+        safeBind(btnMoveUp, 'click', () => this.gameScene?.movePlayer('up'));
+        safeBind(btnMoveDown, 'click', () => this.gameScene?.movePlayer('down'));
+        safeBind(btnMoveLeft, 'click', () => this.gameScene?.movePlayer('left'));
+        safeBind(btnMoveRight, 'click', () => this.gameScene?.movePlayer('right'));
+        safeBind(btnInteract, 'click', () => this.gameScene?.interact());
+        safeBind(btnInventory, 'click', () => this.gameScene?.openInventory());
+        safeBind(btnCraft, 'click', () => this.gameScene?.openCraft());
+        safeBind(btnMap, 'click', () => this.gameScene?.openMap());
 
         const canvas = document.getElementById('gameCanvas');
-        canvas?.addEventListener('click', (e) => {
+        safeBind(canvas, 'click', (e) => {
+            if (!this.engine?.renderEngine || !this.gameScene) return;
+            
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -114,37 +144,54 @@ class SurvivalGame {
     }
 
     startStatusDecay() {
-        setInterval(() => {
-            if (!this.engine.gameState.isPaused && this.engine.gameState.isRunning) {
-                const player = this.gameScene.player;
-                
-                if (player) {
-                    player.hunger = Math.max(0, player.hunger - 0.2);
-                    player.thirst = Math.max(0, player.thirst - 0.3);
-                    
-                    if (player.hunger <= 0 || player.thirst <= 0) {
-                        player.health = Math.max(0, player.health - 1.0);
-                    }
-                    
-                    this.updateStatusBars();
-                }
+        if (this.statusDecayInterval) {
+            clearInterval(this.statusDecayInterval);
+        }
+
+        this.statusDecayInterval = setInterval(() => {
+            if (!this.engine?.gameState || this.engine.gameState.isPaused || !this.engine.gameState.isRunning) {
+                return;
             }
+
+            const player = this.gameScene?.player;
+            
+            if (!player) return;
+
+            player.hunger = Math.max(0, player.hunger - 0.2);
+            player.thirst = Math.max(0, player.thirst - 0.3);
+            
+            if (player.hunger <= 0 || player.thirst <= 0) {
+                player.health = Math.max(0, player.health - 1.0);
+            }
+            
+            this.updateStatusBars();
         }, 1000);
     }
 
     updateStatusBars() {
-        const player = this.gameScene.player;
+        const player = this.gameScene?.player;
         if (!player) return;
         
-        document.querySelector('.health-fill')?.style.setProperty('width', `${player.health}%`);
-        document.querySelector('.hunger-fill')?.style.setProperty('width', `${player.hunger}%`);
-        document.querySelector('.thirst-fill')?.style.setProperty('width', `${player.thirst}%`);
-        document.querySelector('.stamina-fill')?.style.setProperty('width', `${player.stamina}%`);
+        const healthFill = document.querySelector('.health-fill');
+        const hungerFill = document.querySelector('.hunger-fill');
+        const thirstFill = document.querySelector('.thirst-fill');
+        const staminaFill = document.querySelector('.stamina-fill');
         
-        const healthValue = document.querySelector('.health-fill')?.parentElement?.nextElementSibling;
-        const hungerValue = document.querySelector('.hunger-fill')?.parentElement?.nextElementSibling;
-        const thirstValue = document.querySelector('.thirst-fill')?.parentElement?.nextElementSibling;
-        const staminaValue = document.querySelector('.stamina-fill')?.parentElement?.nextElementSibling;
+        const updateWidth = (element, value) => {
+            if (element) {
+                element.style.setProperty('width', `${value}%`);
+            }
+        };
+
+        updateWidth(healthFill, player.health);
+        updateWidth(hungerFill, player.hunger);
+        updateWidth(thirstFill, player.thirst);
+        updateWidth(staminaFill, player.stamina);
+        
+        const healthValue = healthFill?.parentElement?.nextElementSibling;
+        const hungerValue = hungerFill?.parentElement?.nextElementSibling;
+        const thirstValue = thirstFill?.parentElement?.nextElementSibling;
+        const staminaValue = staminaFill?.parentElement?.nextElementSibling;
         
         if (healthValue) healthValue.textContent = Math.floor(player.health);
         if (hungerValue) hungerValue.textContent = Math.floor(player.hunger);
@@ -159,11 +206,74 @@ class SurvivalGame {
         }
     }
 
+    showErrorModal(error) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        `;
+
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid #e74c3c;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            color: #fff;
+        `;
+
+        const title = document.createElement('h2');
+        title.textContent = '游戏初始化失败';
+        title.style.color = '#e74c3c';
+        title.style.marginBottom = '15px';
+
+        const message = document.createElement('p');
+        message.textContent = error.message || '未知错误';
+        message.style.color = '#b8c5d6';
+        message.style.marginBottom = '20px';
+
+        const button = document.createElement('button');
+        button.textContent = '重新加载';
+        button.style.cssText = `
+            padding: 10px 30px;
+            background: linear-gradient(145deg, #4a69bd, #3a5a9d);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        `;
+        button.addEventListener('click', () => window.location.reload());
+
+        modal.appendChild(title);
+        modal.appendChild(message);
+        modal.appendChild(button);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+    }
+
     destroy() {
+        if (this.statusDecayInterval) {
+            clearInterval(this.statusDecayInterval);
+        }
         this.engine?.destroy();
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     window.game = new SurvivalGame();
+});
+
+window.addEventListener('beforeunload', () => {
+    window.game?.destroy();
 });

@@ -9,25 +9,47 @@ class Scene {
     }
 
     init(game) {
+        if (!game) {
+            console.error('Invalid game object passed to Scene.init()');
+            return;
+        }
         this.game = game;
     }
 
     load() {
         this.isLoaded = true;
-        this.onLoad?.();
+        try {
+            this.onLoad?.();
+        } catch (error) {
+            console.error('Error in onLoad callback:', error);
+        }
     }
 
     unload() {
         this.isLoaded = false;
         this.entities = [];
         this.renderItems = [];
-        this.onUnload?.();
+        try {
+            this.onUnload?.();
+        } catch (error) {
+            console.error('Error in onUnload callback:', error);
+        }
     }
 
     addEntity(entity) {
+        if (!entity) {
+            console.error('Invalid entity object');
+            return;
+        }
+        
         this.entities.push(entity);
         entity.scene = this;
-        entity.init?.(this.game);
+        
+        try {
+            entity.init?.(this.game);
+        } catch (error) {
+            console.error('Error initializing entity:', error);
+        }
         
         if (entity.renderItem) {
             this.addRenderItem(entity.renderItem);
@@ -35,11 +57,21 @@ class Scene {
     }
 
     removeEntity(entityId) {
+        if (!entityId) {
+            console.error('Invalid entity ID');
+            return;
+        }
+        
         this.entities = this.entities.filter(e => e.id !== entityId);
         this.renderItems = this.renderItems.filter(r => r.id !== entityId);
     }
 
     addRenderItem(item) {
+        if (!item) {
+            console.error('Invalid render item');
+            return;
+        }
+        
         if (!this.game || !this.game.renderEngine) {
             console.error('Cannot add render item: Game or RenderEngine not initialized');
             return;
@@ -51,6 +83,11 @@ class Scene {
     }
 
     removeRenderItem(itemId) {
+        if (!itemId) {
+            console.error('Invalid render item ID');
+            return;
+        }
+        
         if (!this.game || !this.game.renderEngine) {
             console.error('Cannot remove render item: Game or RenderEngine not initialized');
             this.renderItems = this.renderItems.filter(r => r.id !== itemId);
@@ -69,13 +106,26 @@ class Scene {
 
     update(deltaTime) {
         for (const entity of this.entities) {
-            entity.update?.(deltaTime);
+            try {
+                entity.update?.(deltaTime);
+            } catch (error) {
+                console.error('Error updating entity:', error);
+            }
         }
-        this.onUpdate?.(deltaTime);
+        
+        try {
+            this.onUpdate?.(deltaTime);
+        } catch (error) {
+            console.error('Error in onUpdate callback:', error);
+        }
     }
 
     render() {
-        this.onRender?.();
+        try {
+            this.onRender?.();
+        } catch (error) {
+            console.error('Error in onRender callback:', error);
+        }
     }
 
     onLoad() {}
@@ -100,27 +150,41 @@ class GameScene extends Scene {
         }
         
         super.load();
-        this.setupWorld();
-        this.setupPlayer();
-        this.setupHUD();
-        this.saveSceneToCache();
+        
+        try {
+            this.setupWorld();
+            this.setupPlayer();
+            this.setupHUD();
+            this.saveSceneToCache();
+            console.log(`Scene "${this.name}" loaded successfully`);
+        } catch (error) {
+            console.error(`Failed to load scene "${this.name}":`, error);
+            throw error;
+        }
     }
 
     setupWorld() {
-        const cachedWorld = this.loadWorldFromCache();
-        
-        if (cachedWorld) {
-            this.world = cachedWorld;
-            this.restoreRenderItemsFromCache();
-        } else {
-            this.world = {
-                width: 2000,
-                height: 2000,
-                tiles: [],
-                resources: [],
-                structures: []
-            };
-            this.generateWorld();
+        try {
+            const cachedWorld = this.loadWorldFromCache();
+            
+            if (cachedWorld) {
+                console.log('Loading world from cache');
+                this.world = cachedWorld;
+                this.restoreRenderItemsFromCache();
+            } else {
+                console.log('Generating new world');
+                this.world = {
+                    width: 2000,
+                    height: 2000,
+                    tiles: [],
+                    resources: [],
+                    structures: []
+                };
+                this.generateWorld();
+            }
+        } catch (error) {
+            console.error('Error setting up world:', error);
+            throw error;
         }
     }
 
@@ -168,6 +232,11 @@ class GameScene extends Scene {
     }
 
     createResourceRenderItem(resource) {
+        if (!resource) {
+            console.error('Invalid resource object');
+            return null;
+        }
+
         const sceneRef = this;
         const renderItem = {
             id: resource.id,
@@ -179,7 +248,7 @@ class GameScene extends Scene {
             layer: 'objects',
             resourceData: resource,
             draw: function(ctx) {
-                if (!this.resourceData.collected) {
+                if (!this.resourceData?.collected) {
                     sceneRef.drawResource(ctx, this.resourceData);
                 }
             }
@@ -212,13 +281,17 @@ class GameScene extends Scene {
                 };
 
                 this.world.structures.push(plot);
-
                 this.createPlotRenderItem(plot);
             }
         }
     }
 
     createPlotRenderItem(plot) {
+        if (!plot) {
+            console.error('Invalid plot object');
+            return null;
+        }
+
         const sceneRef = this;
         const renderItem = {
             id: plot.id,
@@ -238,45 +311,60 @@ class GameScene extends Scene {
     }
 
     setupPlayer() {
-        const cachedPlayer = this.loadPlayerFromCache();
-        
-        if (cachedPlayer) {
-            this.player = cachedPlayer;
-        } else {
-            this.player = {
-                id: 'player',
-                x: 200,
-                y: 200,
-                width: 32,
-                height: 48,
-                direction: 'down',
-                speed: 4,
-                health: 200,
-                hunger: 200,
-                thirst: 200,
-                stamina: 200,
-                inventory: {
-                    seeds: 5,
-                    food: 3,
-                    water: 2,
-                    wood: 0,
-                    stone: 0,
-                    grass: 0
+        try {
+            const cachedPlayer = this.loadPlayerFromCache();
+            
+            if (cachedPlayer) {
+                console.log('Loading player from cache');
+                this.player = cachedPlayer;
+            } else {
+                console.log('Creating new player');
+                this.player = {
+                    id: 'player',
+                    x: 200,
+                    y: 200,
+                    width: 32,
+                    height: 48,
+                    direction: 'down',
+                    speed: 4,
+                    health: 200,
+                    hunger: 200,
+                    thirst: 200,
+                    stamina: 200,
+                    inventory: {
+                        seeds: 5,
+                        food: 3,
+                        water: 2,
+                        wood: 0,
+                        stone: 0,
+                        grass: 0
+                    }
+                };
+            }
+
+            this.player.update = (deltaTime) => {
+                if (this.player.stamina < 200) {
+                    this.player.stamina = Math.min(200, this.player.stamina + 0.2);
                 }
             };
-        }
 
-        this.player.update = (deltaTime) => {
-            if (this.player.stamina < 200) {
-                this.player.stamina = Math.min(200, this.player.stamina + 0.2);
+            this.createPlayerRenderItem();
+            
+            if (this.game) {
+                this.game.gameState.player = this.player;
             }
-        };
-
-        this.createPlayerRenderItem();
-        this.game.gameState.player = this.player;
+        } catch (error) {
+            console.error('Error setting up player:', error);
+            throw error;
+        }
     }
 
     createPlayerRenderItem() {
+        if (!this.player) {
+            console.error('Player not initialized');
+            return null;
+        }
+
         const sceneRef = this;
         const renderItem = {
             id: 'player',
@@ -296,7 +384,10 @@ class GameScene extends Scene {
     }
 
     setupHUD() {
-        if (!this.player) return;
+        if (!this.player || !this.game || !this.game.uiManager) {
+            console.warn('Cannot setup HUD: Player, Game or UIManager not initialized');
+            return;
+        }
         
         this.hud = this.game.uiManager.createHUD({
             statusBars: [
@@ -309,12 +400,14 @@ class GameScene extends Scene {
     }
 
     updateHUD() {
-        if (this.hud && this.hud.elements && this.player) {
-            this.hud.elements[0]?.setValue(this.player.health);
-            this.hud.elements[1]?.setValue(this.player.hunger);
-            this.hud.elements[2]?.setValue(this.player.thirst);
-            this.hud.elements[3]?.setValue(this.player.stamina);
+        if (!this.hud?.elements || !this.player) {
+            return;
         }
+        
+        this.hud.elements[0]?.setValue(this.player.health);
+        this.hud.elements[1]?.setValue(this.player.hunger);
+        this.hud.elements[2]?.setValue(this.player.thirst);
+        this.hud.elements[3]?.setValue(this.player.stamina);
     }
 
     update(deltaTime) {
@@ -378,18 +471,23 @@ class GameScene extends Scene {
     }
 
     checkGameOver() {
-        if (this.player && this.player.health <= 0) {
+        if (!this.player || !this.game) return;
+        
+        if (this.player.health <= 0) {
             this.game.stop();
-            this.game.uiManager.showModal({
-                title: '游戏结束',
-                content: `你存活了 ${this.game.gameState.time.day} 天`,
-                buttons: [
-                    { text: '重新开始', click: () => {
-                        this.clearSceneCache();
-                        window.location.reload();
-                    }}
-                ]
-            });
+            
+            if (this.game.uiManager) {
+                this.game.uiManager.showModal({
+                    title: '游戏结束',
+                    content: `你存活了 ${this.game.gameState.time.day} 天`,
+                    buttons: [
+                        { text: '重新开始', click: () => {
+                            this.clearSceneCache();
+                            window.location.reload();
+                        }}
+                    ]
+                });
+            }
         }
     }
 
@@ -489,6 +587,11 @@ class GameScene extends Scene {
     }
 
     drawResource(ctx, resource) {
+        if (!resource) {
+            console.error('Invalid resource object for drawing');
+            return;
+        }
+
         const { x, y, type, color } = resource;
         
         ctx.save();
@@ -588,7 +691,7 @@ class GameScene extends Scene {
     }
 
     collectResource(x, y) {
-        if (!this.world?.resources || !this.player) return;
+        if (!this.world?.resources || !this.player || !this.game?.uiManager) return;
         
         for (const resource of this.world.resources) {
             if (resource.collected) continue;
@@ -643,7 +746,7 @@ class GameScene extends Scene {
     }
 
     interactWithPlot(plot) {
-        if (!this.player) return;
+        if (!this.player || !this.game?.uiManager) return;
         
         if (!plot.planted) {
             if (this.player.inventory.seeds > 0) {
@@ -681,7 +784,7 @@ class GameScene extends Scene {
     }
 
     openInventory() {
-        if (!this.player) return;
+        if (!this.player || !this.game?.uiManager) return;
         
         const inventory = this.player.inventory;
         let content = `
@@ -703,6 +806,8 @@ class GameScene extends Scene {
     }
 
     openCraft() {
+        if (!this.game?.uiManager) return;
+        
         this.game.uiManager.showModal({
             title: '制作',
             content: '<div style="color: #b8c5d6;">制作系统开发中...</div>',
@@ -711,6 +816,8 @@ class GameScene extends Scene {
     }
 
     openMap() {
+        if (!this.game?.uiManager) return;
+        
         this.game.uiManager.showModal({
             title: '地图',
             content: '<div style="color: #b8c5d6;">地图系统开发中...</div>',
