@@ -2,6 +2,7 @@ import { ResourceCache } from '../core/ResourceCache.js';
 import { RenderEngine } from '../core/RenderEngine.js';
 import { InputController } from '../core/InputController.js';
 import { UIManager } from '../core/UIManager.js';
+import { SceneCache } from '../core/SceneCache.js';
 
 class GameEngine {
     constructor(config = {}) {
@@ -17,6 +18,7 @@ class GameEngine {
         }
 
         this.resourceCache = new ResourceCache();
+        this.sceneCache = new SceneCache();
         this.renderEngine = new RenderEngine(this.canvas);
         this.inputController = new InputController();
         this.uiManager = new UIManager();
@@ -262,6 +264,7 @@ class GameEngine {
         this.stop();
         
         this.resourceCache.clear();
+        this.sceneCache.clear();
         this.inputController.destroy();
         this.uiManager.destroy();
         
@@ -270,6 +273,10 @@ class GameEngine {
         if (this._eventListeners) {
             this._eventListeners.clear();
         }
+    }
+
+    clearSceneCache() {
+        this.sceneCache.clear();
     }
 }
 

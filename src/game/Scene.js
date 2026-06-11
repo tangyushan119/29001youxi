@@ -5,6 +5,7 @@ class Scene {
         this.renderItems = [];
         this.isLoaded = false;
         this.game = null;
+        this.renderContext = this;
     }
 
     init(game) {
@@ -77,6 +78,8 @@ class GameScene extends Scene {
         super(name);
         this.player = null;
         this.world = null;
+        this.hud = null;
+        this.resourceRenderConfigs = null;
     }
 
     load() {
@@ -84,17 +87,25 @@ class GameScene extends Scene {
         this.setupWorld();
         this.setupPlayer();
         this.setupHUD();
+        this.saveSceneToCache();
     }
 
     setupWorld() {
-        this.world = {
-            width: 2000,
-            height: 2000,
-            tiles: [],
-            resources: [],
-            structures: []
-        };
-        this.generateWorld();
+        const cachedWorld = this.loadWorldFromCache();
+        
+        if (cachedWorld) {
+            this.world = cachedWorld;
+            this.restoreRenderItemsFromCache();
+        } else {
+            this.world = {
+                width: 2000,
+                height: 2000,
+                tiles: [],
+                resources: [],
+                structures: []
+            };
+            this.generateWorld();
+        }
     }
 
     generateWorld() {
@@ -103,6 +114,8 @@ class GameScene extends Scene {
             { type: 'stone', color: '#708090', drop: 'stone', dropAmount: 1 },
             { type: 'grass', color: '#228B22', drop: 'grass', dropAmount: 1 }
         ];
+
+        this.resourceRenderConfigs = [];
 
         for (let i = 0; i < 30; i++) {
             const resourceType = resourceTypes[Math.floor(Math.random() * resourceTypes.length)];
@@ -123,25 +136,41 @@ class GameScene extends Scene {
 
             this.world.resources.push(resource);
 
-            const renderItem = {
+            this.resourceRenderConfigs.push({
                 id: resource.id,
                 x: resource.x,
                 y: resource.y,
                 type: resource.type,
                 color: resource.color,
-                visible: !resource.collected,
-                layer: 'objects',
-                draw: (ctx) => {
-                    if (!resource.collected) {
-                        this.drawResource(ctx, resource);
-                    }
-                }
-            };
+                collected: resource.collected
+            });
 
-            this.addRenderItem(renderItem);
+            this.createResourceRenderItem(resource);
         }
 
         this.setupPlots();
+    }
+
+    createResourceRenderItem(resource) {
+        const sceneRef = this;
+        const renderItem = {
+            id: resource.id,
+            x: resource.x,
+            y: resource.y,
+            type: resource.type,
+            color: resource.color,
+            visible: !resource.collected,
+            layer: 'objects',
+            resourceData: resource,
+            draw: function(ctx) {
+                if (!this.resourceData.collected) {
+                    sceneRef.drawResource(ctx, this.resourceData);
+                }
+            }
+        };
+
+        this.addRenderItem(renderItem);
+        return renderItem;
     }
 
     setupPlots() {
@@ -168,50 +197,71 @@ class GameScene extends Scene {
 
                 this.world.structures.push(plot);
 
-                const renderItem = {
-                    id: plot.id,
-                    x: plot.x + plot.width / 2,
-                    y: plot.y + plot.height / 2,
-                    width: plot.width,
-                    height: plot.height,
-                    plot,
-                    layer: 'terrain',
-                    draw: (ctx) => this.drawPlot(ctx, plot)
-                };
-
-                this.addRenderItem(renderItem);
+                this.createPlotRenderItem(plot);
             }
         }
     }
 
-    setupPlayer() {
-        this.player = {
-            id: 'player',
-            x: 200,
-            y: 200,
-            width: 32,
-            height: 48,
-            direction: 'down',
-            speed: 4,
-            health: 100,
-            hunger: 80,
-            thirst: 90,
-            stamina: 70,
-            inventory: {
-                seeds: 5,
-                food: 3,
-                water: 2,
-                wood: 0,
-                stone: 0,
-                grass: 0
-            },
-            update: (deltaTime) => {
-                if (this.player.stamina < 100) {
-                    this.player.stamina = Math.min(100, this.player.stamina + 0.1);
-                }
+    createPlotRenderItem(plot) {
+        const sceneRef = this;
+        const renderItem = {
+            id: plot.id,
+            x: plot.x + plot.width / 2,
+            y: plot.y + plot.height / 2,
+            width: plot.width,
+            height: plot.height,
+            plotData: plot,
+            layer: 'terrain',
+            draw: function(ctx) {
+                sceneRef.drawPlot(ctx, this.plotData);
             }
         };
 
+        this.addRenderItem(renderItem);
+        return renderItem;
+    }
+
+    setupPlayer() {
+        const cachedPlayer = this.loadPlayerFromCache();
+        
+        if (cachedPlayer) {
+            this.player = cachedPlayer;
+        } else {
+            this.player = {
+                id: 'player',
+                x: 200,
+                y: 200,
+                width: 32,
+                height: 48,
+                direction: 'down',
+                speed: 4,
+                health: 100,
+                hunger: 80,
+                thirst: 90,
+                stamina: 70,
+                inventory: {
+                    seeds: 5,
+                    food: 3,
+                    water: 2,
+                    wood: 0,
+                    stone: 0,
+                    grass: 0
+                }
+            };
+        }
+
+        this.player.update = (deltaTime) => {
+            if (this.player.stamina < 100) {
+                this.player.stamina = Math.min(100, this.player.stamina + 0.1);
+            }
+        };
+
+        this.createPlayerRenderItem();
+        this.game.gameState.player = this.player;
+    }
+
+    createPlayerRenderItem() {
+        const sceneRef = this;
         const renderItem = {
             id: 'player',
             x: this.player.x + this.player.width / 2,
@@ -220,14 +270,18 @@ class GameScene extends Scene {
             height: this.player.height,
             direction: this.player.direction,
             layer: 'player',
-            draw: (ctx) => this.drawPlayer(ctx)
+            draw: function(ctx) {
+                sceneRef.drawPlayer(ctx);
+            }
         };
 
         this.addRenderItem(renderItem);
-        this.game.gameState.player = this.player;
+        return renderItem;
     }
 
     setupHUD() {
+        if (!this.player) return;
+        
         this.hud = this.game.uiManager.createHUD({
             statusBars: [
                 { label: '生命值', value: this.player.health, color: 'linear-gradient(90deg, #e74c3c, #c0392b)' },
@@ -239,7 +293,7 @@ class GameScene extends Scene {
     }
 
     updateHUD() {
-        if (this.hud && this.hud.elements) {
+        if (this.hud && this.hud.elements && this.player) {
             this.hud.elements[0]?.setValue(this.player.health);
             this.hud.elements[1]?.setValue(this.player.hunger);
             this.hud.elements[2]?.setValue(this.player.thirst);
@@ -250,7 +304,10 @@ class GameScene extends Scene {
     update(deltaTime) {
         super.update(deltaTime);
         
-        this.updatePlayerPosition();
+        if (this.player) {
+            this.player.update?.(deltaTime);
+            this.updatePlayerPosition();
+        }
         this.updateResources();
         this.updatePlots();
         this.updateHUD();
@@ -259,7 +316,7 @@ class GameScene extends Scene {
 
     updatePlayerPosition() {
         const renderItem = this.renderItems.find(r => r.id === 'player');
-        if (renderItem) {
+        if (renderItem && this.player) {
             renderItem.x = this.player.x + this.player.width / 2;
             renderItem.y = this.player.y + this.player.height / 2;
             renderItem.direction = this.player.direction;
@@ -267,6 +324,8 @@ class GameScene extends Scene {
     }
 
     updateResources() {
+        if (!this.world?.resources) return;
+        
         for (const resource of this.world.resources) {
             if (resource.collected && resource.respawnTimer > 0) {
                 resource.respawnTimer -= 16;
@@ -277,6 +336,9 @@ class GameScene extends Scene {
                     const renderItem = this.renderItems.find(r => r.id === resource.id);
                     if (renderItem) {
                         renderItem.visible = true;
+                        if (renderItem.resourceData) {
+                            renderItem.resourceData.collected = false;
+                        }
                     }
                 }
             }
@@ -284,6 +346,8 @@ class GameScene extends Scene {
     }
 
     updatePlots() {
+        if (!this.world?.structures) return;
+        
         for (const plot of this.world.structures) {
             if (plot.planted && plot.watered) {
                 plot.growthStage += 0.005;
@@ -298,19 +362,24 @@ class GameScene extends Scene {
     }
 
     checkGameOver() {
-        if (this.player.health <= 0) {
+        if (this.player && this.player.health <= 0) {
             this.game.stop();
             this.game.uiManager.showModal({
                 title: '游戏结束',
                 content: `你存活了 ${this.game.gameState.time.day} 天`,
                 buttons: [
-                    { text: '重新开始', click: () => window.location.reload() }
+                    { text: '重新开始', click: () => {
+                        this.clearSceneCache();
+                        window.location.reload();
+                    }}
                 ]
             });
         }
     }
 
     drawPlayer(ctx) {
+        if (!this.player) return;
+        
         const { x, y, width, height, direction } = this.player;
         
         ctx.save();
@@ -468,6 +537,8 @@ class GameScene extends Scene {
     }
 
     movePlayer(direction) {
+        if (!this.player || !this.world) return;
+        
         const { speed, width, height } = this.player;
         
         switch(direction) {
@@ -494,9 +565,12 @@ class GameScene extends Scene {
         this.player.y = Math.max(0, Math.min(this.world.height - height, this.player.y));
         
         this.game.renderEngine.setCameraPosition(this.player.x, this.player.y);
+        this.savePlayerToCache();
     }
 
     collectResource(x, y) {
+        if (!this.world?.resources || !this.player) return;
+        
         for (const resource of this.world.resources) {
             if (resource.collected) continue;
             
@@ -521,14 +595,20 @@ class GameScene extends Scene {
                 const renderItem = this.renderItems.find(r => r.id === resource.id);
                 if (renderItem) {
                     renderItem.visible = false;
+                    if (renderItem.resourceData) {
+                        renderItem.resourceData.collected = true;
+                    }
                 }
                 
+                this.savePlayerToCache();
                 return;
             }
         }
     }
 
     interact() {
+        if (!this.player || !this.world?.structures) return;
+        
         const playerCenterX = this.player.x + this.player.width / 2;
         const playerCenterY = this.player.y + this.player.height / 2;
         
@@ -544,6 +624,8 @@ class GameScene extends Scene {
     }
 
     interactWithPlot(plot) {
+        if (!this.player) return;
+        
         if (!plot.planted) {
             if (this.player.inventory.seeds > 0) {
                 plot.planted = true;
@@ -574,9 +656,14 @@ class GameScene extends Scene {
             plot.harvestable = false;
             this.game.uiManager.showSuccess('收获了作物！获得3份食物');
         }
+        
+        this.saveSceneToCache();
+        this.savePlayerToCache();
     }
 
     openInventory() {
+        if (!this.player) return;
+        
         const inventory = this.player.inventory;
         let content = `
             <div style="color: #fff; font-size: 14px; line-height: 1.8;">
@@ -610,6 +697,88 @@ class GameScene extends Scene {
             content: '<div style="color: #b8c5d6;">地图系统开发中...</div>',
             buttons: [{ text: '关闭' }]
         });
+    }
+
+    saveSceneToCache() {
+        if (!this.game?.sceneCache || !this.world) return;
+        
+        this.game.sceneCache.saveSceneState(this.name, {
+            world: {
+                width: this.world.width,
+                height: this.world.height,
+                resources: this.world.resources.map(r => ({
+                    id: r.id,
+                    type: r.type,
+                    x: r.x,
+                    y: r.y,
+                    color: r.color,
+                    drop: r.drop,
+                    dropAmount: r.dropAmount,
+                    collected: r.collected,
+                    respawnTimer: r.respawnTimer
+                })),
+                structures: this.world.structures.map(s => ({
+                    id: s.id,
+                    x: s.x,
+                    y: s.y,
+                    width: s.width,
+                    height: s.height,
+                    planted: s.planted,
+                    seedType: s.seedType,
+                    growthStage: s.growthStage,
+                    watered: s.watered,
+                    harvestable: s.harvestable
+                }))
+            }
+        });
+    }
+
+    loadWorldFromCache() {
+        if (!this.game?.sceneCache) return null;
+        
+        const cached = this.game.sceneCache.loadSceneState(this.name);
+        if (cached) {
+            return cached.world;
+        }
+        return null;
+    }
+
+    restoreRenderItemsFromCache() {
+        if (!this.world?.resources) return;
+        
+        for (const resource of this.world.resources) {
+            this.createResourceRenderItem(resource);
+        }
+        
+        for (const plot of this.world.structures) {
+            this.createPlotRenderItem(plot);
+        }
+    }
+
+    savePlayerToCache() {
+        if (!this.game?.sceneCache || !this.player) return;
+        
+        this.game.sceneCache.savePlayerState({
+            x: this.player.x,
+            y: this.player.y,
+            direction: this.player.direction,
+            health: this.player.health,
+            hunger: this.player.hunger,
+            thirst: this.player.thirst,
+            stamina: this.player.stamina,
+            inventory: { ...this.player.inventory }
+        });
+    }
+
+    loadPlayerFromCache() {
+        if (!this.game?.sceneCache) return null;
+        
+        return this.game.sceneCache.loadPlayerState();
+    }
+
+    clearSceneCache() {
+        if (!this.game?.sceneCache) return;
+        this.game.sceneCache.clear();
     }
 }
 
