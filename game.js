@@ -22,9 +22,13 @@ class SurvivalGame {
             inventory: {
                 seeds: 5,
                 food: 3,
-                water: 2
+                water: 2,
+                wood: 0,
+                stone: 0,
+                grass: 0
             },
-            plots: this.initPlots()
+            plots: this.initPlots(),
+            wildResources: this.generateWildResources()
         };
         this.lastUpdateTime = Date.now();
         this.statusDecayInterval = null;
@@ -60,6 +64,56 @@ class SurvivalGame {
         return plots;
     }
 
+    generateWildResources() {
+        const resources = [];
+        const resourceTypes = [
+            { type: 'tree', color: '#8B4513', size: 35, drop: 'wood', dropAmount: 2 },
+            { type: 'stone', color: '#708090', size: 25, drop: 'stone', dropAmount: 1 },
+            { type: 'grass', color: '#228B22', size: 15, drop: 'grass', dropAmount: 1 }
+        ];
+        
+        const existingPositions = new Set();
+        
+        const getRandomPosition = () => {
+            let x, y;
+            let attempts = 0;
+            do {
+                x = Math.random() * (this.canvas.width - 60) + 30;
+                y = Math.random() * (this.canvas.height - 60) + 30;
+                attempts++;
+            } while (attempts < 50 && this.isPositionOccupied(x, y, existingPositions));
+            return { x, y };
+        };
+        
+        const numResources = 15;
+        for (let i = 0; i < numResources; i++) {
+            const typeIndex = i % resourceTypes.length;
+            const resourceType = resourceTypes[typeIndex];
+            const pos = getRandomPosition();
+            existingPositions.add(`${Math.floor(pos.x / 40)}-${Math.floor(pos.y / 40)}`);
+            
+            resources.push({
+                id: `${resourceType.type}-${i}`,
+                type: resourceType.type,
+                x: pos.x,
+                y: pos.y,
+                size: resourceType.size,
+                color: resourceType.color,
+                drop: resourceType.drop,
+                dropAmount: resourceType.dropAmount,
+                collected: false,
+                respawnTimer: 0
+            });
+        }
+        
+        return resources;
+    }
+
+    isPositionOccupied(x, y, existingPositions) {
+        const key = `${Math.floor(x / 40)}-${Math.floor(y / 40)}`;
+        return existingPositions.has(key);
+    }
+
     resizeCanvas() {
         const wrapper = document.querySelector('.game-canvas-wrapper');
         const rect = wrapper.getBoundingClientRect();
@@ -79,6 +133,7 @@ class SurvivalGame {
         document.getElementById('btnCraft').addEventListener('click', () => this.openCraft());
         document.getElementById('btnMap').addEventListener('click', () => this.openMap());
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        this.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
     }
 
     handleKeyDown(e) {
@@ -120,6 +175,49 @@ class SurvivalGame {
                 e.preventDefault();
                 this.togglePause();
                 break;
+        }
+    }
+
+    handleCanvasClick(e) {
+        if (this.gameState.isPaused || !this.gameState.isRunning) return;
+        
+        const rect = this.canvas.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        this.collectResource(clickX, clickY);
+    }
+
+    collectResource(x, y) {
+        for (const resource of this.gameState.wildResources) {
+            if (resource.collected) continue;
+            
+            const distX = Math.abs(x - resource.x);
+            const distY = Math.abs(y - resource.y);
+            
+            if (distX <= resource.size && distY <= resource.size) {
+                resource.collected = true;
+                resource.respawnTimer = 5000;
+                
+                this.gameState.inventory[resource.drop] += resource.dropAmount;
+                
+                const resourceNames = { wood: '木材', stone: '石头', grass: '杂草' };
+                console.log(`采集了${resourceNames[resource.drop]} x${resource.dropAmount}`);
+                
+                return;
+            }
+        }
+    }
+
+    updateWildResources() {
+        for (const resource of this.gameState.wildResources) {
+            if (resource.collected && resource.respawnTimer > 0) {
+                resource.respawnTimer -= 16;
+                if (resource.respawnTimer <= 0) {
+                    resource.collected = false;
+                    resource.respawnTimer = 0;
+                }
+            }
         }
     }
 
@@ -413,8 +511,92 @@ class SurvivalGame {
         }
     }
 
+    drawWildResources() {
+        for (const resource of this.gameState.wildResources) {
+            if (resource.collected) continue;
+            
+            this.ctx.save();
+            
+            switch(resource.type) {
+                case 'tree':
+                    this.drawTree(resource);
+                    break;
+                case 'stone':
+                    this.drawStone(resource);
+                    break;
+                case 'grass':
+                    this.drawGrass(resource);
+                    break;
+            }
+            
+            this.ctx.restore();
+        }
+    }
+
+    drawTree(resource) {
+        const { x, y, size } = resource;
+        
+        this.ctx.fillStyle = '#8B4513';
+        this.ctx.fillRect(x - size / 3, y, size * 2 / 3, size * 1.2);
+        
+        this.ctx.fillStyle = '#228B22';
+        this.ctx.beginPath();
+        this.ctx.arc(x, y - size * 0.3, size * 0.6, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#32CD32';
+        this.ctx.beginPath();
+        this.ctx.arc(x - size * 0.3, y - size * 0.1, size * 0.4, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.beginPath();
+        this.ctx.arc(x + size * 0.3, y - size * 0.1, size * 0.4, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+
+    drawStone(resource) {
+        const { x, y, size } = resource;
+        
+        this.ctx.fillStyle = '#708090';
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, y - size / 2);
+        this.ctx.lineTo(x + size / 2, y - size / 4);
+        this.ctx.lineTo(x + size / 2.5, y + size / 2);
+        this.ctx.lineTo(x - size / 2.5, y + size / 2);
+        this.ctx.lineTo(x - size / 2, y - size / 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#A9A9A9';
+        this.ctx.beginPath();
+        this.ctx.ellipse(x - size / 6, y - size / 6, size / 6, size / 8, -0.3, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+
+    drawGrass(resource) {
+        const { x, y, size } = resource;
+        
+        this.ctx.strokeStyle = '#228B22';
+        this.ctx.lineWidth = 2;
+        
+        for (let i = -2; i <= 2; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x + i * 3, y);
+            this.ctx.quadraticCurveTo(x + i * 3 + i, y - size, x + i * 3, y - size * 1.5);
+            this.ctx.stroke();
+        }
+        
+        this.ctx.fillStyle = '#32CD32';
+        for (let i = -1; i <= 1; i++) {
+            this.ctx.beginPath();
+            this.ctx.arc(x + i * 4, y - size, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+    }
+
     draw() {
         this.drawBackground();
+        this.drawWildResources();
         this.drawPlots();
         this.drawPlayer();
     }
@@ -426,6 +608,7 @@ class SurvivalGame {
             
             if (!this.gameState.isPaused) {
                 this.updatePlots();
+                this.updateWildResources();
                 this.draw();
             }
             
