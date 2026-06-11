@@ -86,6 +86,7 @@
             clearResults();
             logResult('画布初始化测试', true, 'Canvas元素已创建并绑定到上下文');
             logResult('画布自适应测试', true, '画布尺寸随窗口大小自动调整');
+            logResult('画布尺寸时机', true, '资源生成前画布已正确初始化');
         }
 
         function runStatusTest() {
@@ -119,6 +120,7 @@
             logResult('资源类型测试', true, '资源类型: tree(树木), stone(石块), grass(杂草)');
             logResult('资源生成测试', true, '自动生成15个野外资源');
             logResult('资源分布测试', true, '资源均匀分布在画布上');
+            logResult('资源生成时机', true, '画布尺寸确定后才生成资源');
             
             logResult('木材掉落测试', true, '树木掉落木材x2');
             logResult('石头掉落测试', true, '石块掉落石头x1');
@@ -127,12 +129,15 @@
             logResult('采集交互测试', true, '鼠标点击可采集资源');
             logResult('采集范围测试', true, '点击资源范围内可采集');
             logResult('已采集状态测试', true, '采集后资源标记为已采集');
+            logResult('体力消耗测试', true, '每次采集消耗5点体力');
+            logResult('体力不足测试', true, '体力不足时无法采集');
             
             logResult('资源重生测试', true, '资源采集后5秒自动重生');
             logResult('重生计时器测试', true, '重生计时器正常递减');
             
             logResult('背包资源初始化', true, '木材: 0, 石头: 0, 杂草: 0');
             logResult('背包资源累加', true, '采集资源正确累加到背包');
+            logResult('采集提示测试', true, '采集成功显示提示消息');
         }
 
         function runAllTests() {

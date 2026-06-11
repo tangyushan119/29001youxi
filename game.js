@@ -3,6 +3,11 @@ class SurvivalGame {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.TILE_SIZE = 40;
+        this.lastUpdateTime = Date.now();
+        this.statusDecayInterval = null;
+        
+        this.resizeCanvas();
+        
         this.gameState = {
             health: 100,
             hunger: 80,
@@ -30,10 +35,8 @@ class SurvivalGame {
             plots: this.initPlots(),
             wildResources: this.generateWildResources()
         };
-        this.lastUpdateTime = Date.now();
-        this.statusDecayInterval = null;
+        
         this.setupEventListeners();
-        this.resizeCanvas();
         this.startGameLoop();
     }
 
@@ -196,17 +199,37 @@ class SurvivalGame {
             const distY = Math.abs(y - resource.y);
             
             if (distX <= resource.size && distY <= resource.size) {
+                if (this.gameState.stamina < 5) {
+                    console.log('体力不足，无法采集');
+                    return;
+                }
+                
+                this.consumeStamina(5);
                 resource.collected = true;
                 resource.respawnTimer = 5000;
                 
                 this.gameState.inventory[resource.drop] += resource.dropAmount;
                 
                 const resourceNames = { wood: '木材', stone: '石头', grass: '杂草' };
-                console.log(`采集了${resourceNames[resource.drop]} x${resource.dropAmount}`);
+                const message = `采集了${resourceNames[resource.drop]} x${resource.dropAmount}`;
+                console.log(message);
+                this.showCollectMessage(message, resource.x, resource.y);
                 
                 return;
             }
         }
+    }
+
+    showCollectMessage(message, x, y) {
+        if (this.collectMessageTimeout) {
+            clearTimeout(this.collectMessageTimeout);
+        }
+        
+        this.collectMessage = { text: message, x, y, alpha: 1 };
+        
+        this.collectMessageTimeout = setTimeout(() => {
+            this.collectMessage = null;
+        }, 2000);
     }
 
     updateWildResources() {
@@ -599,6 +622,25 @@ class SurvivalGame {
         this.drawWildResources();
         this.drawPlots();
         this.drawPlayer();
+        this.drawCollectMessage();
+    }
+
+    drawCollectMessage() {
+        if (this.collectMessage) {
+            this.ctx.save();
+            this.ctx.globalAlpha = this.collectMessage.alpha;
+            this.ctx.fillStyle = '#fff';
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 3;
+            this.ctx.font = 'bold 16px Arial';
+            this.ctx.textAlign = 'center';
+            
+            const text = this.collectMessage.text;
+            this.ctx.strokeText(text, this.collectMessage.x, this.collectMessage.y - 50);
+            this.ctx.fillText(text, this.collectMessage.x, this.collectMessage.y - 50);
+            
+            this.ctx.restore();
+        }
     }
 
     startGameLoop() {
