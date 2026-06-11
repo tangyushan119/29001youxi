@@ -190,9 +190,9 @@ class GameScene extends Scene {
 
     generateWorld() {
         const resourceTypes = [
-            { type: 'tree', color: '#8B4513', drop: 'wood', dropAmount: 2 },
-            { type: 'stone', color: '#708090', drop: 'stone', dropAmount: 1 },
-            { type: 'grass', color: '#228B22', drop: 'grass', dropAmount: 1 }
+            { type: 'tree', color: '#8B4513', size: 35, drop: 'wood', dropAmount: 2 },
+            { type: 'stone', color: '#708090', size: 25, drop: 'stone', dropAmount: 1 },
+            { type: 'grass', color: '#228B22', size: 15, drop: 'grass', dropAmount: 1 }
         ];
 
         this.resourceRenderConfigs = [];
@@ -208,6 +208,7 @@ class GameScene extends Scene {
                 x,
                 y,
                 color: resourceType.color,
+                size: resourceType.size,
                 drop: resourceType.drop,
                 dropAmount: resourceType.dropAmount,
                 collected: false,
@@ -222,6 +223,7 @@ class GameScene extends Scene {
                 y: resource.y,
                 type: resource.type,
                 color: resource.color,
+                size: resource.size,
                 collected: resource.collected
             });
 
@@ -375,7 +377,7 @@ class GameScene extends Scene {
             direction: this.player.direction,
             layer: 'player',
             draw: function(ctx) {
-                sceneRef.drawPlayer(ctx);
+                sceneRef.drawPlayer(ctx, this.x, this.y, this.width, this.height, this.direction);
             }
         };
 
@@ -491,11 +493,7 @@ class GameScene extends Scene {
         }
     }
 
-    drawPlayer(ctx) {
-        if (!this.player) return;
-        
-        const { x, y, width, height, direction } = this.player;
-        
+    drawPlayer(ctx, x, y, width, height, direction) {
         ctx.save();
         ctx.translate(x, y);
         
@@ -592,7 +590,7 @@ class GameScene extends Scene {
             return;
         }
 
-        const { x, y, type, color } = resource;
+        const { x, y, type, color, size = 25 } = resource;
         
         ctx.save();
         ctx.translate(x, y);
@@ -600,53 +598,55 @@ class GameScene extends Scene {
         switch(type) {
             case 'tree':
                 ctx.fillStyle = '#8B4513';
-                ctx.fillRect(-12, 0, 24, 48);
+                ctx.fillRect(-size / 3, 0, size * 2 / 3, size * 1.2);
                 
                 ctx.fillStyle = color;
                 ctx.beginPath();
-                ctx.arc(0, -15, 24, 0, Math.PI * 2);
+                ctx.arc(0, -size * 0.3, size * 0.6, 0, Math.PI * 2);
                 ctx.fill();
                 
                 ctx.fillStyle = '#32CD32';
                 ctx.beginPath();
-                ctx.arc(-10, -8, 16, 0, Math.PI * 2);
+                ctx.arc(-size * 0.3, -size * 0.1, size * 0.4, 0, Math.PI * 2);
                 ctx.fill();
+                
                 ctx.beginPath();
-                ctx.arc(10, -8, 16, 0, Math.PI * 2);
+                ctx.arc(size * 0.3, -size * 0.1, size * 0.4, 0, Math.PI * 2);
                 ctx.fill();
                 break;
                 
             case 'stone':
                 ctx.fillStyle = color;
                 ctx.beginPath();
-                ctx.moveTo(0, -15);
-                ctx.lineTo(15, -8);
-                ctx.lineTo(12, 15);
-                ctx.lineTo(-12, 15);
-                ctx.lineTo(-15, -8);
+                ctx.moveTo(0, -size / 2);
+                ctx.lineTo(size / 2, -size / 4);
+                ctx.lineTo(size / 2.5, size / 2);
+                ctx.lineTo(-size / 2.5, size / 2);
+                ctx.lineTo(-size / 2, -size / 4);
                 ctx.closePath();
                 ctx.fill();
                 
                 ctx.fillStyle = '#A9A9A9';
                 ctx.beginPath();
-                ctx.ellipse(-5, -8, 6, 4, -0.3, 0, Math.PI * 2);
+                ctx.ellipse(-size / 6, -size / 6, size / 6, size / 8, -0.3, 0, Math.PI * 2);
                 ctx.fill();
                 break;
                 
             case 'grass':
                 ctx.strokeStyle = color;
                 ctx.lineWidth = 2;
+                
                 for (let i = -2; i <= 2; i++) {
                     ctx.beginPath();
-                    ctx.moveTo(i * 5, 0);
-                    ctx.quadraticCurveTo(i * 5 + i * 3, -20, i * 5, -30);
+                    ctx.moveTo(x + i * 3, y);
+                    ctx.quadraticCurveTo(x + i * 3 + i, y - size, x + i * 3, y - size * 1.5);
                     ctx.stroke();
                 }
                 
                 ctx.fillStyle = '#32CD32';
                 for (let i = -1; i <= 1; i++) {
                     ctx.beginPath();
-                    ctx.arc(i * 6, -15, 3, 0, Math.PI * 2);
+                    ctx.arc(x + i * 4, y - size, 2, 0, Math.PI * 2);
                     ctx.fill();
                 }
                 break;
@@ -698,8 +698,9 @@ class GameScene extends Scene {
             
             const distX = Math.abs(x - resource.x);
             const distY = Math.abs(y - resource.y);
+            const interactionRadius = resource.size || 35;
             
-            if (distX <= 40 && distY <= 40) {
+            if (distX <= interactionRadius && distY <= interactionRadius) {
                 if (this.player.stamina < 5) {
                     this.game.uiManager.showWarning('体力不足，无法采集');
                     return;

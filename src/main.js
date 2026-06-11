@@ -132,14 +132,13 @@ class SurvivalGame {
 
         const canvas = document.getElementById('gameCanvas');
         safeBind(canvas, 'click', (e) => {
-            if (!this.engine?.renderEngine || !this.gameScene) return;
+            if (!this.gameScene) return;
             
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
             
-            const worldPos = this.engine.renderEngine.screenToWorld(x, y);
-            this.gameScene.collectResource(worldPos.x, worldPos.y);
+            this.gameScene.collectResource(x, y);
         });
     }
 
