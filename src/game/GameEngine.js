@@ -139,7 +139,13 @@ class GameEngine {
     }
 
     setScene(name) {
+        if (!this.renderEngine) {
+            console.error('RenderEngine not initialized, cannot set scene');
+            throw new Error('RenderEngine not initialized');
+        }
+        
         if (!this.scenes.has(name)) {
+            console.error(`Scene "${name}" not found`);
             throw new Error(`Scene "${name}" not found`);
         }
         

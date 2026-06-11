@@ -10,13 +10,19 @@ class SurvivalGame {
     }
 
     async init() {
-        this.engine = new GameEngine({
-            canvasId: 'gameCanvas',
-            debug: false
-        });
-
         try {
+            this.engine = new GameEngine({
+                canvasId: 'gameCanvas',
+                debug: false
+            });
+
             await this.engine.initializationPromise;
+            
+            if (!this.engine.renderEngine) {
+                throw new Error('RenderEngine initialization failed');
+            }
+            
+            console.log('RenderEngine initialized successfully');
             
             this.gameScene = new GameScene('main');
             this.engine.addScene('main', this.gameScene);

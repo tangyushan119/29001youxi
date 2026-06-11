@@ -40,12 +40,23 @@ class Scene {
     }
 
     addRenderItem(item) {
+        if (!this.game || !this.game.renderEngine) {
+            console.error('Cannot add render item: Game or RenderEngine not initialized');
+            return;
+        }
+        
         const layer = item.layer || 'objects';
         this.game.renderEngine.addToLayer(layer, item);
         this.renderItems.push(item);
     }
 
     removeRenderItem(itemId) {
+        if (!this.game || !this.game.renderEngine) {
+            console.error('Cannot remove render item: Game or RenderEngine not initialized');
+            this.renderItems = this.renderItems.filter(r => r.id !== itemId);
+            return;
+        }
+        
         for (const item of this.renderItems) {
             if (item.id === itemId) {
                 const layer = item.layer || 'objects';
@@ -83,6 +94,11 @@ class GameScene extends Scene {
     }
 
     load() {
+        if (!this.game || !this.game.renderEngine) {
+            console.error('Game or RenderEngine not initialized, cannot load scene');
+            return;
+        }
+        
         super.load();
         this.setupWorld();
         this.setupPlayer();
@@ -537,7 +553,10 @@ class GameScene extends Scene {
     }
 
     movePlayer(direction) {
-        if (!this.player || !this.world) return;
+        if (!this.player || !this.world || !this.game || !this.game.renderEngine) {
+            console.error('Cannot move player: Player, World, Game or RenderEngine not initialized');
+            return;
+        }
         
         const { speed, width, height } = this.player;
         
