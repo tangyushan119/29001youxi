@@ -242,6 +242,28 @@ class SurvivalGame {
                 }
             }
         }
+        this.checkNearbyResources();
+    }
+
+    checkNearbyResources() {
+        const { player } = this.gameState;
+        const playerCenterX = player.x + player.width / 2;
+        const playerCenterY = player.y + player.height / 2;
+        const interactionRange = 80;
+        
+        this.nearbyResource = null;
+        
+        for (const resource of this.gameState.wildResources) {
+            if (resource.collected) continue;
+            
+            const distX = Math.abs(playerCenterX - resource.x);
+            const distY = Math.abs(playerCenterY - resource.y);
+            
+            if (distX < interactionRange && distY < interactionRange) {
+                this.nearbyResource = resource;
+                break;
+            }
+        }
     }
 
     movePlayer(direction) {
@@ -622,20 +644,54 @@ class SurvivalGame {
         this.drawWildResources();
         this.drawPlots();
         this.drawPlayer();
+        this.drawNearbyResourceHint();
         this.drawCollectMessage();
+    }
+
+    drawNearbyResourceHint() {
+        if (this.nearbyResource) {
+            const resourceNames = { wood: '木材', stone: '石头', grass: '杂草' };
+            const resourceName = resourceNames[this.nearbyResource.drop] || this.nearbyResource.type;
+            
+            this.ctx.save();
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(this.canvas.width / 2 - 100, this.canvas.height - 80, 200, 40);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.strokeStyle = '#000';
+            this.ctx.lineWidth = 2;
+            this.ctx.font = 'bold 14px Arial';
+            this.ctx.textAlign = 'center';
+            
+            const hintText = `点击采集 ${resourceName}`;
+            this.ctx.strokeText(hintText, this.canvas.width / 2, this.canvas.height - 55);
+            this.ctx.fillText(hintText, this.canvas.width / 2, this.canvas.height - 55);
+            
+            this.ctx.restore();
+            
+            this.ctx.save();
+            this.ctx.strokeStyle = '#f1c40f';
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash([5, 5]);
+            this.ctx.beginPath();
+            this.ctx.arc(this.nearbyResource.x, this.nearbyResource.y, this.nearbyResource.size + 10, 0, Math.PI * 2);
+            this.ctx.stroke();
+            this.ctx.setLineDash([]);
+            this.ctx.restore();
+        }
     }
 
     drawCollectMessage() {
         if (this.collectMessage) {
             this.ctx.save();
             this.ctx.globalAlpha = this.collectMessage.alpha;
-            this.ctx.fillStyle = '#fff';
+            this.ctx.fillStyle = '#2ecc71';
             this.ctx.strokeStyle = '#000';
             this.ctx.lineWidth = 3;
-            this.ctx.font = 'bold 16px Arial';
+            this.ctx.font = 'bold 18px Arial';
             this.ctx.textAlign = 'center';
             
-            const text = this.collectMessage.text;
+            const text = '+' + this.collectMessage.text;
             this.ctx.strokeText(text, this.collectMessage.x, this.collectMessage.y - 50);
             this.ctx.fillText(text, this.collectMessage.x, this.collectMessage.y - 50);
             
