@@ -1,9 +1,5 @@
 class PlayerRenderer {
     constructor() {
-        this.animationTime = 0;
-        this.isWalking = false;
-        this.direction = 'down';
-        
         this.bodyConfig = {
             head: { width: 22, height: 24, offsetY: -40 },
             torso: { width: 20, height: 28, offsetY: -16 },
@@ -34,31 +30,15 @@ class PlayerRenderer {
         };
     }
 
-    setDirection(direction) {
-        this.direction = direction;
-    }
-
-    setWalking(isWalking) {
-        this.isWalking = isWalking;
-    }
-
-    update(deltaTime) {
-        if (this.isWalking) {
-            this.animationTime += deltaTime * 15;
-        } else {
-            this.animationTime *= 0.95;
-        }
-    }
-
-    draw(ctx, x, y, direction = this.direction) {
+    draw(ctx, x, y, direction = 'down', isWalking = false, animationTime = 0) {
         ctx.save();
         ctx.translate(x, y);
 
         const angle = this.getDirectionAngle(direction);
         ctx.rotate(angle);
 
-        this.drawShadow(ctx);
-        this.drawBody(ctx);
+        this.drawShadow(ctx, isWalking, animationTime);
+        this.drawBody(ctx, isWalking, animationTime);
 
         ctx.restore();
     }
@@ -73,9 +53,9 @@ class PlayerRenderer {
         }
     }
 
-    drawShadow(ctx) {
-        const swingOffset = this.isWalking ? Math.sin(this.animationTime) * 3 : 0;
-        const shadowScale = this.isWalking ? 0.85 + Math.sin(this.animationTime) * 0.08 : 0.92;
+    drawShadow(ctx, isWalking, animationTime) {
+        const swingOffset = isWalking ? Math.sin(animationTime) * 3 : 0;
+        const shadowScale = isWalking ? 0.85 + Math.sin(animationTime) * 0.08 : 0.92;
         
         ctx.save();
         ctx.translate(swingOffset, 35);
@@ -88,16 +68,16 @@ class PlayerRenderer {
         ctx.restore();
     }
 
-    drawBody(ctx) {
-        this.drawLegs(ctx);
+    drawBody(ctx, isWalking, animationTime) {
+        this.drawLegs(ctx, isWalking, animationTime);
         this.drawTorso(ctx);
-        this.drawArms(ctx);
-        this.drawHead(ctx);
+        this.drawArms(ctx, isWalking, animationTime);
+        this.drawHead(ctx, isWalking, animationTime);
     }
 
-    drawHead(ctx) {
+    drawHead(ctx, isWalking, animationTime) {
         const head = this.bodyConfig.head;
-        const bounce = this.isWalking ? Math.sin(this.animationTime) * 2.5 : 0;
+        const bounce = isWalking ? Math.sin(animationTime) * 2.5 : 0;
         const headY = head.offsetY + bounce;
 
         ctx.save();
@@ -182,9 +162,9 @@ class PlayerRenderer {
         ctx.fill();
     }
 
-    drawArms(ctx) {
-        const swing = this.isWalking ? Math.sin(this.animationTime) * 0.5 : 0;
-        const elbowBend = this.isWalking ? Math.sin(this.animationTime + Math.PI / 2) * 0.3 : 0;
+    drawArms(ctx, isWalking, animationTime) {
+        const swing = isWalking ? Math.sin(animationTime) * 0.5 : 0;
+        const elbowBend = isWalking ? Math.sin(animationTime + Math.PI / 2) * 0.3 : 0;
 
         this.drawArm(ctx, 'left', swing, elbowBend);
         this.drawArm(ctx, 'right', -swing, -elbowBend);
@@ -222,9 +202,9 @@ class PlayerRenderer {
         ctx.restore();
     }
 
-    drawLegs(ctx) {
-        const swing = this.isWalking ? Math.sin(this.animationTime) * 0.55 : 0;
-        const kneeBend = this.isWalking ? Math.abs(Math.sin(this.animationTime)) * 0.6 : 0;
+    drawLegs(ctx, isWalking, animationTime) {
+        const swing = isWalking ? Math.sin(animationTime) * 0.55 : 0;
+        const kneeBend = isWalking ? Math.abs(Math.sin(animationTime)) * 0.6 : 0;
 
         this.drawLeg(ctx, 'left', swing, kneeBend);
         this.drawLeg(ctx, 'right', -swing, kneeBend);
@@ -267,7 +247,7 @@ class PlayerRenderer {
         ctx.save();
         ctx.translate(0, lowerLeg.length);
         
-        const footAngle = this.isWalking ? Math.sin(this.animationTime + (side === 'left' ? 0 : Math.PI)) * 0.3 : 0;
+        const footAngle = isWalking ? Math.sin(animationTime + (side === 'left' ? 0 : Math.PI)) * 0.3 : 0;
         ctx.rotate(footAngle);
 
         ctx.fillStyle = this.colors.shoes;

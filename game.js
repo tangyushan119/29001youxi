@@ -22,7 +22,9 @@ class SurvivalGame {
                 width: 32,
                 height: 48,
                 direction: 'down',
-                speed: 4
+                speed: 4,
+                isWalking: false,
+                animationTime: 0
             },
             inventory: {
                 seeds: 5,
@@ -270,6 +272,8 @@ class SurvivalGame {
         if (this.gameState.isPaused || !this.gameState.isRunning) return;
         const { speed } = this.gameState.player;
         
+        this.gameState.player.isWalking = true;
+        
         switch(direction) {
             case 'up':
                 this.gameState.player.y -= speed;
@@ -292,6 +296,13 @@ class SurvivalGame {
         this.consumeStamina(0.15);
         this.gameState.player.x = Math.max(0, Math.min(this.canvas.width - this.gameState.player.width, this.gameState.player.x));
         this.gameState.player.y = Math.max(0, Math.min(this.canvas.height - this.gameState.player.height, this.gameState.player.y));
+        
+        if (this.walkAnimationTimeout) {
+            clearTimeout(this.walkAnimationTimeout);
+        }
+        this.walkAnimationTimeout = setTimeout(() => {
+            this.gameState.player.isWalking = false;
+        }, 200);
     }
 
     consumeStamina(amount) {
@@ -452,37 +463,21 @@ class SurvivalGame {
 
     drawPlayer() {
         const { x, y, width, height, direction } = this.gameState.player;
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
         
-        this.ctx.save();
-        this.ctx.translate(x + width / 2, y + height / 2);
-        
-        let angle = 0;
-        switch(direction) {
-            case 'up': angle = 0; break;
-            case 'down': angle = Math.PI; break;
-            case 'left': angle = -Math.PI / 2; break;
-            case 'right': angle = Math.PI / 2; break;
+        if (!this.playerRenderer) {
+            this.playerRenderer = new PlayerRenderer();
         }
-        this.ctx.rotate(angle);
         
-        this.ctx.fillStyle = '#2c3e50';
-        this.ctx.fillRect(-width / 2, -height / 2, width, height);
-        
-        this.ctx.fillStyle = '#34495e';
-        this.ctx.fillRect(-width / 2, -height / 2, width, height / 3);
-        
-        this.ctx.fillStyle = '#e74c3c';
-        this.ctx.beginPath();
-        this.ctx.arc(0, -height / 2 + 8, 8, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        this.ctx.fillStyle = '#fff';
-        this.ctx.beginPath();
-        this.ctx.arc(-3, -height / 2 + 10, 2, 0, Math.PI * 2);
-        this.ctx.arc(3, -height / 2 + 10, 2, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        this.ctx.restore();
+        this.playerRenderer.draw(
+            this.ctx, 
+            centerX, 
+            centerY, 
+            direction, 
+            this.gameState.player.isWalking,
+            this.gameState.player.animationTime
+        );
     }
 
     drawPlots() {
@@ -705,6 +700,7 @@ class SurvivalGame {
             if (!this.gameState.isRunning) return;
             
             if (!this.gameState.isPaused) {
+                this.updatePlayerAnimation();
                 this.updatePlots();
                 this.updateWildResources();
                 this.draw();
@@ -713,6 +709,15 @@ class SurvivalGame {
             requestAnimationFrame(gameLoop);
         };
         gameLoop();
+    }
+
+    updatePlayerAnimation() {
+        const player = this.gameState.player;
+        if (player.isWalking) {
+            player.animationTime += 0.25;
+        } else {
+            player.animationTime *= 0.95;
+        }
     }
 
     start() {

@@ -1,4 +1,5 @@
 import { PlayerRenderer } from './PlayerRenderer.js';
+import { Player } from './Player.js';
 
 class Scene {
     constructor(name) {
@@ -323,37 +324,14 @@ class GameScene extends Scene {
             
             if (cachedPlayer) {
                 console.log('Loading player from cache');
-                this.player = cachedPlayer;
+                this.player = Player.deserialize(cachedPlayer);
             } else {
                 console.log('Creating new player');
-                this.player = {
-                    id: 'player',
+                this.player = new Player({
                     x: 200,
-                    y: 200,
-                    width: 32,
-                    height: 48,
-                    direction: 'down',
-                    speed: 4,
-                    health: 200,
-                    hunger: 200,
-                    thirst: 200,
-                    stamina: 200,
-                    inventory: {
-                        seeds: 5,
-                        food: 3,
-                        water: 2,
-                        wood: 0,
-                        stone: 0,
-                        grass: 0
-                    }
-                };
+                    y: 200
+                });
             }
-
-            this.player.update = (deltaTime) => {
-                if (this.player.stamina < 200) {
-                    this.player.stamina = Math.min(200, this.player.stamina + 0.5);
-                }
-            };
 
             this.createPlayerRenderItem();
             
@@ -375,8 +353,8 @@ class GameScene extends Scene {
         const sceneRef = this;
         const renderItem = {
             id: 'player',
-            x: this.player.x + this.player.width / 2,
-            y: this.player.y + this.player.height / 2,
+            x: this.player.getCenterX(),
+            y: this.player.getCenterY(),
             width: this.player.width,
             height: this.player.height,
             direction: this.player.direction,
@@ -398,10 +376,10 @@ class GameScene extends Scene {
         
         this.hud = this.game.uiManager.createHUD({
             statusBars: [
-                { label: '生命值', value: this.player.health, color: 'linear-gradient(90deg, #e74c3c, #c0392b)' },
-                { label: '饥饿度', value: this.player.hunger, color: 'linear-gradient(90deg, #f1c40f, #f39c12)' },
-                { label: '口渴度', value: this.player.thirst, color: 'linear-gradient(90deg, #3498db, #2980b9)' },
-                { label: '体力值', value: this.player.stamina, color: 'linear-gradient(90deg, #2ecc71, #27ae60)' }
+                { label: '生命值', value: this.player.stats.health, color: 'linear-gradient(90deg, #e74c3c, #c0392b)' },
+                { label: '饥饿度', value: this.player.stats.hunger, color: 'linear-gradient(90deg, #f1c40f, #f39c12)' },
+                { label: '口渴度', value: this.player.stats.thirst, color: 'linear-gradient(90deg, #3498db, #2980b9)' },
+                { label: '体力值', value: this.player.stats.stamina, color: 'linear-gradient(90deg, #2ecc71, #27ae60)' }
             ]
         });
     }
@@ -411,19 +389,18 @@ class GameScene extends Scene {
             return;
         }
         
-        this.hud.elements[0]?.setValue(this.player.health);
-        this.hud.elements[1]?.setValue(this.player.hunger);
-        this.hud.elements[2]?.setValue(this.player.thirst);
-        this.hud.elements[3]?.setValue(this.player.stamina);
+        this.hud.elements[0]?.setValue(this.player.stats.health);
+        this.hud.elements[1]?.setValue(this.player.stats.hunger);
+        this.hud.elements[2]?.setValue(this.player.stats.thirst);
+        this.hud.elements[3]?.setValue(this.player.stats.stamina);
     }
 
     update(deltaTime) {
         super.update(deltaTime);
         
         if (this.player) {
-            this.player.update?.(deltaTime);
+            this.player.update(deltaTime);
             this.updatePlayerPosition();
-            this.playerRenderer.update(deltaTime);
         }
         this.updateResources();
         this.updatePlots();
@@ -434,8 +411,8 @@ class GameScene extends Scene {
     updatePlayerPosition() {
         const renderItem = this.renderItems.find(r => r.id === 'player');
         if (renderItem && this.player) {
-            renderItem.x = this.player.x + this.player.width / 2;
-            renderItem.y = this.player.y + this.player.height / 2;
+            renderItem.x = this.player.getCenterX();
+            renderItem.y = this.player.getCenterY();
             renderItem.direction = this.player.direction;
         }
     }
@@ -481,7 +458,7 @@ class GameScene extends Scene {
     checkGameOver() {
         if (!this.player || !this.game) return;
         
-        if (this.player.health <= 0) {
+        if (this.player.stats.health <= 0) {
             this.game.stop();
             
             if (this.game.uiManager) {
@@ -500,8 +477,8 @@ class GameScene extends Scene {
     }
 
     drawPlayer(ctx, x, y, width, height, direction) {
-        this.playerRenderer.drawShadow(ctx, x, y);
-        this.playerRenderer.draw(ctx, x, y, direction);
+        if (!this.player) return;
+        this.playerRenderer.draw(ctx, x, y, direction, this.player.isWalking, this.player.animationTime);
     }
 
     drawPlot(ctx, plot) {
@@ -639,43 +616,18 @@ class GameScene extends Scene {
             return;
         }
         
-        const { speed, width, height } = this.player;
-        
-        switch(direction) {
-            case 'up':
-                this.player.y -= speed;
-                this.player.direction = 'up';
-                break;
-            case 'down':
-                this.player.y += speed;
-                this.player.direction = 'down';
-                break;
-            case 'left':
-                this.player.x -= speed;
-                this.player.direction = 'left';
-                break;
-            case 'right':
-                this.player.x += speed;
-                this.player.direction = 'right';
-                break;
-        }
-        
-        this.player.stamina = Math.max(0, this.player.stamina - 0.15);
-        this.player.x = Math.max(0, Math.min(this.world.width - width, this.player.x));
-        this.player.y = Math.max(0, Math.min(this.world.height - height, this.player.y));
+        this.player.move(direction);
+        this.player.clampPosition(this.world.width, this.world.height);
         
         this.game.renderEngine.setCameraPosition(this.player.x, this.player.y);
         this.savePlayerToCache();
-        
-        this.playerRenderer.setWalking(true);
-        this.playerRenderer.setDirection(direction);
         
         if (this.walkAnimationFrame) {
             clearTimeout(this.walkAnimationFrame);
         }
         
         this.walkAnimationFrame = setTimeout(() => {
-            this.playerRenderer.setWalking(false);
+            this.player.stopWalking();
         }, 200);
     }
 
@@ -690,12 +642,12 @@ class GameScene extends Scene {
             const interactionRadius = resource.size || 35;
             
             if (distX <= interactionRadius && distY <= interactionRadius) {
-                if (this.player.stamina < 2) {
+                if (this.player.stats.stamina < 2) {
                     this.game.uiManager.showWarning('体力不足，无法采集');
                     return;
                 }
                 
-                this.player.stamina -= 2;
+                this.player.consumeStamina(2);
                 resource.collected = true;
                 resource.respawnTimer = 5000;
                 
@@ -874,16 +826,7 @@ class GameScene extends Scene {
     savePlayerToCache() {
         if (!this.game?.sceneCache || !this.player) return;
         
-        this.game.sceneCache.savePlayerState({
-            x: this.player.x,
-            y: this.player.y,
-            direction: this.player.direction,
-            health: this.player.health,
-            hunger: this.player.hunger,
-            thirst: this.player.thirst,
-            stamina: this.player.stamina,
-            inventory: { ...this.player.inventory }
-        });
+        this.game.sceneCache.savePlayerState(this.player.serialize());
     }
 
     loadPlayerFromCache() {
