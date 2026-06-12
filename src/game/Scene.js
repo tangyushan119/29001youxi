@@ -269,12 +269,8 @@ class GameScene extends Scene {
         const w = tile.width;
         const h = tile.height;
         
-        ctx.fillStyle = baseColor;
+        ctx.fillStyle = '#3d7a3d';
         ctx.fillRect(x, y, w, h);
-        
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(x, y, w, h);
         
         this.drawTerrainPattern(ctx, tile, baseColor);
     }
@@ -285,73 +281,31 @@ class GameScene extends Scene {
         const w = tile.width;
         const h = tile.height;
         
-        switch(tile.terrainType) {
-            case 'grass':
-                this.drawGrassPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'forest':
-                this.drawForestPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'water':
-            case 'river':
-            case 'lake':
-                this.drawWaterPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'deep_water':
-                this.drawDeepWaterPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'beach':
-                this.drawBeachPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'mountain':
-                this.drawMountainPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'peak':
-                this.drawPeakPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'snow':
-            case 'snow_peak':
-                this.drawSnowPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'tundra':
-                this.drawTundraPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'desert':
-                this.drawDesertPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'savanna':
-                this.drawSavannaPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'tropical_forest':
-                this.drawTropicalForestPattern(ctx, x, y, w, h);
-                break;
-                
-            case 'grassland':
-                this.drawGrasslandPattern(ctx, x, y, w, h);
-                break;
-        }
+        this.drawGrassPattern(ctx, x, y, w, h);
     }
 
     drawGrassPattern(ctx, x, y, w, h) {
-        ctx.fillStyle = '#3d7a3d';
-        for (let i = 0; i < 8; i++) {
-            const gx = x + (i % 4) * 10 + 2;
-            const gy = y + Math.floor(i / 4) * 20 + 15;
+        const grassColors = ['#2d6a27', '#3d7a3d', '#4d8a4d', '#5d9a5d'];
+        
+        for (let i = 0; i < 12; i++) {
+            const gx = x + ((i % 6) * (w / 6)) + (w / 12);
+            const gy = y + (Math.floor(i / 6) * (h / 2)) + (h / 4) + (Math.random() - 0.5) * 8;
+            const colorIndex = i % grassColors.length;
+            
+            ctx.fillStyle = grassColors[colorIndex];
             ctx.beginPath();
-            ctx.moveTo(gx, gy + 10);
-            ctx.quadraticCurveTo(gx + 2, gy, gx, gy - 5);
-            ctx.quadraticCurveTo(gx - 2, gy, gx, gy + 10);
+            ctx.moveTo(gx, gy + 8);
+            ctx.quadraticCurveTo(gx + 3, gy - 2, gx, gy - 8);
+            ctx.quadraticCurveTo(gx - 3, gy - 2, gx, gy + 8);
+            ctx.fill();
+        }
+        
+        for (let i = 0; i < 6; i++) {
+            const fx = x + Math.random() * w;
+            const fy = y + Math.random() * h;
+            ctx.fillStyle = Math.random() > 0.7 ? '#ffd93d' : '#6bcb77';
+            ctx.beginPath();
+            ctx.arc(fx, fy, 1.5, 0, Math.PI * 2);
             ctx.fill();
         }
     }

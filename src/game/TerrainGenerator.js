@@ -416,22 +416,22 @@ class TerrainGenerator {
 
     getTerrainColors() {
         const defaultColors = {
-            deep_water: '#0a192f',
-            water: '#1e3a5f',
-            beach: '#f4d03f',
-            grass: '#2d5a27',
-            forest: '#1e4d2b',
-            mountain: '#6b7b8a',
-            peak: '#a0a0a0',
-            river: '#3d7cb5',
-            lake: '#2d6a9a',
-            snow: '#e8f4f8',
-            snow_peak: '#ffffff',
-            tundra: '#b8c5d6',
-            desert: '#f4a460',
-            savanna: '#daa520',
-            tropical_forest: '#0d4f3c',
-            grassland: '#4a7c3a'
+            deep_water: '#3d7a3d',
+            water: '#3d7a3d',
+            beach: '#3d7a3d',
+            grass: '#3d7a3d',
+            forest: '#3d7a3d',
+            mountain: '#3d7a3d',
+            peak: '#3d7a3d',
+            river: '#3d7a3d',
+            lake: '#3d7a3d',
+            snow: '#3d7a3d',
+            snow_peak: '#3d7a3d',
+            tundra: '#3d7a3d',
+            desert: '#3d7a3d',
+            savanna: '#3d7a3d',
+            tropical_forest: '#3d7a3d',
+            grassland: '#3d7a3d'
         };
         
         if (this.terrainConfig?.biomes) {
