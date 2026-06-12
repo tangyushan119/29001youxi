@@ -1,4 +1,5 @@
 import { PlayerRenderer } from './src/game/PlayerRenderer.js';
+import { InventoryModal } from './src/ui/inventory/inventory-modal.js';
 
 class SurvivalGame {
     constructor() {
@@ -40,8 +41,37 @@ class SurvivalGame {
             wildResources: this.generateWildResources()
         };
         
+        this.inventoryModal = new InventoryModal();
+        this.setupInventoryCallbacks();
+        
         this.setupEventListeners();
         this.startGameLoop();
+    }
+
+    setupInventoryCallbacks() {
+        this.inventoryModal.setOnCloseCallback((updatedInventory) => {
+            this.gameState.inventory = { ...updatedInventory };
+            this.gameState.isPaused = false;
+        });
+        
+        this.inventoryModal.setOnItemUseCallback((itemType, itemCount) => {
+            this.useItem(itemType);
+        });
+    }
+
+    useItem(itemType) {
+        switch(itemType) {
+            case 'food':
+                this.gameState.hunger = Math.min(200, this.gameState.hunger + 50);
+                this.updateStatusBars();
+                break;
+            case 'water':
+                this.gameState.thirst = Math.min(200, this.gameState.thirst + 50);
+                this.updateStatusBars();
+                break;
+            default:
+                console.log(`使用了 ${itemType}`);
+        }
     }
 
     initPlots() {
@@ -144,7 +174,8 @@ class SurvivalGame {
     }
 
     handleKeyDown(e) {
-        if (this.gameState.isPaused) return;
+        if (this.gameState.isPaused || this.inventoryModal.isModalOpen()) return;
+        
         switch(e.key) {
             case 'ArrowUp': case 'w': case 'W':
                 e.preventDefault();
@@ -186,7 +217,7 @@ class SurvivalGame {
     }
 
     handleCanvasClick(e) {
-        if (this.gameState.isPaused || !this.gameState.isRunning) return;
+        if (this.gameState.isPaused || this.inventoryModal.isModalOpen() || !this.gameState.isRunning) return;
         
         const rect = this.canvas.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
@@ -218,6 +249,8 @@ class SurvivalGame {
                 const message = `采集了${resourceNames[resource.drop]} x${resource.dropAmount}`;
                 console.log(message);
                 this.showCollectMessage(message, resource.x, resource.y);
+                
+                this.inventoryModal.updateInventory(this.gameState.inventory);
                 
                 return;
             }
@@ -271,7 +304,8 @@ class SurvivalGame {
     }
 
     movePlayer(direction) {
-        if (this.gameState.isPaused || !this.gameState.isRunning) return;
+        if (this.gameState.isPaused || this.inventoryModal.isModalOpen() || !this.gameState.isRunning) return;
+        
         const { speed } = this.gameState.player;
         
         this.gameState.player.isWalking = true;
@@ -318,6 +352,8 @@ class SurvivalGame {
     }
 
     interact() {
+        if (this.inventoryModal.isModalOpen()) return;
+        
         const { player } = this.gameState;
         const playerCenterX = player.x + player.width / 2;
         const playerCenterY = player.y + player.height / 2;
@@ -342,6 +378,7 @@ class SurvivalGame {
                 plot.growthStage = 0;
                 plot.watered = true;
                 this.gameState.inventory.seeds--;
+                this.inventoryModal.updateInventory(this.gameState.inventory);
                 console.log('种下了一颗种子');
             } else {
                 console.log('没有种子了');
@@ -351,6 +388,7 @@ class SurvivalGame {
                 if (this.gameState.inventory.water > 0) {
                     plot.watered = true;
                     this.gameState.inventory.water--;
+                    this.inventoryModal.updateInventory(this.gameState.inventory);
                     console.log('给作物浇水');
                 } else {
                     console.log('没有水了');
@@ -360,6 +398,7 @@ class SurvivalGame {
             }
         } else {
             this.gameState.inventory.food += 3;
+            this.inventoryModal.updateInventory(this.gameState.inventory);
             plot.planted = false;
             plot.seedType = null;
             plot.growthStage = 0;
@@ -384,8 +423,12 @@ class SurvivalGame {
     }
 
     openInventory() {
-        console.log('背包:', this.gameState.inventory);
-        alert(`背包内容:\n种子: ${this.gameState.inventory.seeds}\n食物: ${this.gameState.inventory.food}\n水: ${this.gameState.inventory.water}`);
+        if (this.gameState.isPaused && !this.inventoryModal.isModalOpen()) {
+            this.gameState.isPaused = false;
+        }
+        
+        this.gameState.isPaused = true;
+        this.inventoryModal.open(this.gameState.inventory);
     }
 
     openCraft() {
@@ -397,6 +440,8 @@ class SurvivalGame {
     }
 
     togglePause() {
+        if (this.inventoryModal.isModalOpen()) return;
+        
         this.gameState.isPaused = !this.gameState.isPaused;
         console.log(this.gameState.isPaused ? '游戏暂停' : '游戏继续');
     }

@@ -264,6 +264,85 @@ body {
     border: 1px solid rgba(74, 105, 189, 0.3);
 }
 
+.inventory-overlay {
+    backdrop-filter: blur(5px);
+}
+
+.inventory-modal {
+    animation: inventorySlideUp 0.3s ease;
+}
+
+.inventory-cell {
+    transition: all 0.2s ease;
+}
+
+.inventory-cell:hover {
+    transform: scale(1.05);
+}
+
+.inventory-cell.selected {
+    animation: pulseBorder 1s infinite;
+}
+
+.inventory-item {
+    transition: all 0.2s ease;
+}
+
+.inventory-item:hover {
+    transform: scale(1.1);
+}
+
+.inventory-tooltip {
+    animation: tooltipFadeIn 0.2s ease;
+}
+
+@keyframes inventorySlideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+@keyframes pulseBorder {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 5px rgba(243, 156, 18, 0);
+    }
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @media (max-width: 600px) {
     .status-bar {
         padding: 8px 10px;
