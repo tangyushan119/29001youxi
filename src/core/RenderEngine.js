@@ -29,6 +29,7 @@ class RenderEngine {
     initLayers() {
         this.addLayer('background', { zIndex: 0 });
         this.addLayer('terrain', { zIndex: 1 });
+        this.addLayer('structures', { zIndex: 1.5 });
         this.addLayer('objects', { zIndex: 2 });
         this.addLayer('player', { zIndex: 3 });
         this.addLayer('ui', { zIndex: 10 });

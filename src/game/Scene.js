@@ -1,6 +1,7 @@
 import { PlayerRenderer } from './PlayerRenderer.js';
 import { Player } from './Player.js';
 import { InventoryModal } from '../ui/inventory/inventory-modal.js';
+import { TerrainGenerator } from './TerrainGenerator.js';
 
 class Scene {
     constructor(name) {
@@ -149,6 +150,9 @@ class GameScene extends Scene {
         this.isPlayerWalking = false;
         this.walkAnimationFrame = null;
         this.inventoryModal = null;
+        this.terrainGenerator = null;
+        this.terrainTiles = [];
+        this.layeredElements = [];
     }
 
     load() {
@@ -180,20 +184,175 @@ class GameScene extends Scene {
                 this.world = cachedWorld;
                 this.restoreRenderItemsFromCache();
             } else {
-                console.log('Generating new world');
+                console.log('Generating new world with terrain');
+                this.terrainGenerator = new TerrainGenerator(2000, 2000, 12345);
+                this.terrainTiles = this.terrainGenerator.generateTerrain();
+                
                 this.world = {
                     width: 2000,
                     height: 2000,
-                    tiles: [],
+                    tiles: this.terrainTiles,
                     resources: [],
                     structures: []
                 };
+                
                 this.generateWorld();
             }
+            
+            this.createTerrainRenderItems();
+            this.createLayeredElements();
         } catch (error) {
             console.error('Error setting up world:', error);
             throw error;
         }
+    }
+
+    createTerrainRenderItems() {
+        if (!this.terrainTiles || !this.game?.renderEngine) return;
+
+        const sceneRef = this;
+        
+        for (const tile of this.terrainTiles) {
+            const renderItem = {
+                id: tile.id,
+                x: tile.x + tile.width / 2,
+                y: tile.y + tile.height / 2,
+                width: tile.width,
+                height: tile.height,
+                terrainType: tile.terrainType,
+                heightValue: tile.heightValue,
+                layer: 'terrain',
+                draw: function(ctx) {
+                    sceneRef.drawTerrainTile(ctx, tile);
+                }
+            };
+            
+            this.addRenderItem(renderItem);
+        }
+    }
+
+    createLayeredElements() {
+        this.layeredElements = [];
+        
+        for (let i = 0; i < 15; i++) {
+            const tree = {
+                id: `tree_${i}`,
+                x: Math.random() * 1800 + 100,
+                y: Math.random() * 1800 + 100,
+                type: 'tree',
+                layer: 'objects',
+                size: 30 + Math.random() * 15,
+                sway: Math.random() * Math.PI * 2,
+                swaySpeed: 0.5 + Math.random() * 0.5
+            };
+            this.layeredElements.push(tree);
+            this.createTreeRenderItem(tree);
+        }
+        
+        for (let i = 0; i < 8; i++) {
+            const rock = {
+                id: `rock_${i}`,
+                x: Math.random() * 1800 + 100,
+                y: Math.random() * 1800 + 100,
+                type: 'rock',
+                layer: 'objects',
+                size: 15 + Math.random() * 10
+            };
+            this.layeredElements.push(rock);
+            this.createRockRenderItem(rock);
+        }
+        
+        for (let i = 0; i < 20; i++) {
+            const bush = {
+                id: `bush_${i}`,
+                x: Math.random() * 1800 + 100,
+                y: Math.random() * 1800 + 100,
+                type: 'bush',
+                layer: 'objects',
+                size: 10 + Math.random() * 8
+            };
+            this.layeredElements.push(bush);
+            this.createBushRenderItem(bush);
+        }
+        
+        for (let i = 0; i < 3; i++) {
+            const flower = {
+                id: `flower_${i}`,
+                x: Math.random() * 1800 + 100,
+                y: Math.random() * 1800 + 100,
+                type: 'flower',
+                layer: 'objects',
+                color: ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6b9d'][i % 5]
+            };
+            this.layeredElements.push(flower);
+            this.createFlowerRenderItem(flower);
+        }
+    }
+
+    createTreeRenderItem(tree) {
+        const sceneRef = this;
+        const renderItem = {
+            id: tree.id,
+            x: tree.x,
+            y: tree.y,
+            type: tree.type,
+            size: tree.size,
+            sway: tree.sway,
+            swaySpeed: tree.swaySpeed,
+            layer: tree.layer,
+            draw: function(ctx) {
+                sceneRef.drawTree(ctx, this.x, this.y, this.size, this.sway);
+            }
+        };
+        this.addRenderItem(renderItem);
+    }
+
+    createRockRenderItem(rock) {
+        const sceneRef = this;
+        const renderItem = {
+            id: rock.id,
+            x: rock.x,
+            y: rock.y,
+            type: rock.type,
+            size: rock.size,
+            layer: rock.layer,
+            draw: function(ctx) {
+                sceneRef.drawRock(ctx, this.x, this.y, this.size);
+            }
+        };
+        this.addRenderItem(renderItem);
+    }
+
+    createBushRenderItem(bush) {
+        const sceneRef = this;
+        const renderItem = {
+            id: bush.id,
+            x: bush.x,
+            y: bush.y,
+            type: bush.type,
+            size: bush.size,
+            layer: bush.layer,
+            draw: function(ctx) {
+                sceneRef.drawBush(ctx, this.x, this.y, this.size);
+            }
+        };
+        this.addRenderItem(renderItem);
+    }
+
+    createFlowerRenderItem(flower) {
+        const sceneRef = this;
+        const renderItem = {
+            id: flower.id,
+            x: flower.x,
+            y: flower.y,
+            type: flower.type,
+            color: flower.color,
+            layer: flower.layer,
+            draw: function(ctx) {
+                sceneRef.drawFlower(ctx, this.x, this.y, this.color);
+            }
+        };
+        this.addRenderItem(renderItem);
     }
 
     generateWorld() {
@@ -310,7 +469,7 @@ class GameScene extends Scene {
             width: plot.width,
             height: plot.height,
             plotData: plot,
-            layer: 'terrain',
+            layer: 'structures',
             draw: function(ctx) {
                 sceneRef.drawPlot(ctx, this.plotData);
             }
@@ -408,6 +567,15 @@ class GameScene extends Scene {
         this.updatePlots();
         this.updateHUD();
         this.checkGameOver();
+        this.updateLayeredElements(deltaTime);
+    }
+
+    updateLayeredElements(deltaTime) {
+        for (const element of this.layeredElements) {
+            if (element.sway !== undefined) {
+                element.sway += element.swaySpeed * deltaTime;
+            }
+        }
     }
 
     updatePlayerPosition() {
@@ -481,6 +649,226 @@ class GameScene extends Scene {
     drawPlayer(ctx, x, y, width, height, direction) {
         if (!this.player) return;
         this.playerRenderer.draw(ctx, x, y, direction, this.player.isWalking, this.player.animationTime);
+    }
+
+    drawTerrainTile(ctx, tile) {
+        const colors = this.terrainGenerator?.getTerrainColors() || {
+            deep_water: '#1e3a5f',
+            water: '#2d5a87',
+            beach: '#f4d03f',
+            grass: '#2d5a27',
+            forest: '#1e4d2b',
+            mountain: '#6b7b8a',
+            peak: '#e8e8e8',
+            river: '#3d7cb5',
+            lake: '#2d6a9a'
+        };
+        
+        const color = colors[tile.terrainType] || colors.grass;
+        
+        ctx.fillStyle = color;
+        ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
+        
+        this.drawTerrainTexture(ctx, tile, color);
+    }
+
+    drawTerrainTexture(ctx, tile, baseColor) {
+        const x = tile.x;
+        const y = tile.y;
+        const w = tile.width;
+        const h = tile.height;
+        
+        switch(tile.terrainType) {
+            case 'grass':
+                ctx.fillStyle = '#3d7a3d';
+                for (let i = 0; i < 8; i++) {
+                    const gx = x + (i % 4) * 10 + 2;
+                    const gy = y + Math.floor(i / 4) * 20 + 15;
+                    ctx.beginPath();
+                    ctx.moveTo(gx, gy + 10);
+                    ctx.quadraticCurveTo(gx + 2, gy, gx, gy - 5);
+                    ctx.quadraticCurveTo(gx - 2, gy, gx, gy + 10);
+                    ctx.fill();
+                }
+                break;
+                
+            case 'forest':
+                ctx.fillStyle = '#1a3a1a';
+                for (let i = 0; i < 4; i++) {
+                    const tx = x + (i % 2) * 20 + 10;
+                    const ty = y + Math.floor(i / 2) * 20 + 10;
+                    ctx.fillStyle = '#2d5a27';
+                    ctx.beginPath();
+                    ctx.moveTo(tx, ty + 20);
+                    ctx.lineTo(tx + 8, ty);
+                    ctx.lineTo(tx - 8, ty);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                break;
+                
+            case 'water':
+            case 'river':
+            case 'lake':
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                const time = Date.now() * 0.002;
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.arc(x + 10 + i * 15, y + 20 + Math.sin(time + i) * 5, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                break;
+                
+            case 'beach':
+                ctx.fillStyle = '#d4a574';
+                for (let i = 0; i < 12; i++) {
+                    const sx = x + Math.random() * w;
+                    const sy = y + Math.random() * h;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 1, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                break;
+                
+            case 'mountain':
+                ctx.fillStyle = '#5a6a7a';
+                for (let i = 0; i < 5; i++) {
+                    const mx = x + Math.random() * w;
+                    const my = y + Math.random() * h;
+                    ctx.beginPath();
+                    ctx.moveTo(mx, my + 5);
+                    ctx.lineTo(mx + 3, my);
+                    ctx.lineTo(mx - 3, my);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                break;
+                
+            case 'peak':
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = 0.6;
+                for (let i = 0; i < 6; i++) {
+                    const px = x + Math.random() * w;
+                    const py = y + Math.random() * h;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                break;
+        }
+    }
+
+    drawTree(ctx, x, y, size, sway) {
+        const swayOffset = Math.sin(sway) * 2;
+        
+        ctx.save();
+        ctx.translate(x, y);
+        
+        ctx.fillStyle = '#5d4037';
+        ctx.fillRect(-size / 5, 0, size * 2 / 5, size * 0.8);
+        
+        const gradient = ctx.createRadialGradient(0, -size * 0.3, 0, 0, -size * 0.3, size * 0.7);
+        gradient.addColorStop(0, '#4a7c23');
+        gradient.addColorStop(1, '#2d5a1a');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(swayOffset, -size * 1.2);
+        ctx.lineTo(swayOffset + size * 0.6, size * 0.1);
+        ctx.lineTo(swayOffset - size * 0.6, size * 0.1);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(swayOffset, -size * 0.8);
+        ctx.lineTo(swayOffset + size * 0.5, -size * 0.2);
+        ctx.lineTo(swayOffset - size * 0.5, -size * 0.2);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
+    }
+
+    drawRock(ctx, x, y, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        const gradient = ctx.createRadialGradient(-size / 4, -size / 4, 0, 0, 0, size);
+        gradient.addColorStop(0, '#8a8a8a');
+        gradient.addColorStop(0.5, '#6a6a6a');
+        gradient.addColorStop(1, '#4a4a4a');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(0, -size / 2);
+        ctx.lineTo(size / 2, -size / 4);
+        ctx.lineTo(size / 3, size / 2);
+        ctx.lineTo(-size / 3, size / 2);
+        ctx.lineTo(-size / 2, -size / 4);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.fillStyle = '#9a9a9a';
+        ctx.beginPath();
+        ctx.ellipse(-size / 6, -size / 6, size / 6, size / 8, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+
+    drawBush(ctx, x, y, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        const gradient = ctx.createRadialGradient(0, -size / 4, 0, 0, 0, size);
+        gradient.addColorStop(0, '#5a8a3a');
+        gradient.addColorStop(1, '#3a6a2a');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(0, 0, size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#4a7a2a';
+        ctx.beginPath();
+        ctx.arc(-size / 3, -size / 4, size * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(size / 3, -size / 4, size * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+
+    drawFlower(ctx, x, y, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        
+        ctx.strokeStyle = '#2d5a27';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 8);
+        ctx.lineTo(0, -5);
+        ctx.stroke();
+        
+        ctx.fillStyle = color;
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2;
+            const px = Math.cos(angle) * 4;
+            const py = Math.sin(angle) * 4 - 8;
+            ctx.beginPath();
+            ctx.ellipse(px, py, 3, 5, angle, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(0, -8, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
     }
 
     drawPlot(ctx, plot) {

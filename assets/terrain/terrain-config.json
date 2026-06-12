@@ -1,0 +1,104 @@
+{
+    "tileSize": 40,
+    "seed": 12345,
+    "worldWidth": 2000,
+    "worldHeight": 2000,
+    "biomes": {
+        "deep_water": {
+            "color": "#1e3a5f",
+            "passable": false,
+            "texture": "waves",
+            "minHeight": 0,
+            "maxHeight": 0.35
+        },
+        "water": {
+            "color": "#2d5a87",
+            "passable": false,
+            "texture": "waves",
+            "minHeight": 0.35,
+            "maxHeight": 0.42
+        },
+        "beach": {
+            "color": "#f4d03f",
+            "passable": true,
+            "texture": "sand",
+            "minHeight": 0.42,
+            "maxHeight": 0.48
+        },
+        "grass": {
+            "color": "#2d5a27",
+            "passable": true,
+            "texture": "grass",
+            "minHeight": 0.48,
+            "maxHeight": 0.65
+        },
+        "forest": {
+            "color": "#1e4d2b",
+            "passable": true,
+            "texture": "trees",
+            "minHeight": 0.65,
+            "maxHeight": 0.78
+        },
+        "mountain": {
+            "color": "#6b7b8a",
+            "passable": false,
+            "texture": "rocks",
+            "minHeight": 0.78,
+            "maxHeight": 0.88
+        },
+        "peak": {
+            "color": "#e8e8e8",
+            "passable": false,
+            "texture": "snow",
+            "minHeight": 0.88,
+            "maxHeight": 1.0
+        },
+        "river": {
+            "color": "#3d7cb5",
+            "passable": false,
+            "texture": "waves"
+        },
+        "lake": {
+            "color": "#2d6a9a",
+            "passable": false,
+            "texture": "waves"
+        }
+    },
+    "layeredElements": {
+        "trees": {
+            "count": 15,
+            "minSize": 30,
+            "maxSize": 45
+        },
+        "rocks": {
+            "count": 8,
+            "minSize": 15,
+            "maxSize": 25
+        },
+        "bushes": {
+            "count": 20,
+            "minSize": 10,
+            "maxSize": 18
+        },
+        "flowers": {
+            "count": 3,
+            "colors": ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#ff6b9d"]
+        }
+    },
+    "features": {
+        "rivers": {
+            "count": 3,
+            "minLength": 5
+        },
+        "lakes": {
+            "count": 2,
+            "minRadius": 2,
+            "maxRadius": 5
+        },
+        "mountains": {
+            "count": 4,
+            "minRadius": 2,
+            "maxRadius": 4
+        }
+    }
+}
