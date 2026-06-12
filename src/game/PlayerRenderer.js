@@ -3,13 +3,34 @@ class PlayerRenderer {
         this.animationTime = 0;
         this.isWalking = false;
         this.direction = 'down';
-        this.bodyParts = {
-            head: { width: 20, height: 20, offsetY: -35 },
-            torso: { width: 16, height: 24, offsetY: -15 },
-            leftArm: { length: 18, width: 6, offsetX: -10, offsetY: -18 },
-            rightArm: { length: 18, width: 6, offsetX: 10, offsetY: -18 },
-            leftLeg: { length: 22, width: 7, offsetX: -6, offsetY: 8 },
-            rightLeg: { length: 22, width: 7, offsetX: 6, offsetY: 8 }
+        
+        this.bodyConfig = {
+            head: { width: 22, height: 24, offsetY: -40 },
+            torso: { width: 20, height: 28, offsetY: -16 },
+            leftUpperArm: { length: 12, width: 7, offsetX: -11, offsetY: -20 },
+            rightUpperArm: { length: 12, width: 7, offsetX: 11, offsetY: -20 },
+            leftLowerArm: { length: 14, width: 6, offsetX: -11, offsetY: -8 },
+            rightLowerArm: { length: 14, width: 6, offsetX: 11, offsetY: -8 },
+            leftUpperLeg: { length: 16, width: 8, offsetX: -7, offsetY: 10 },
+            rightUpperLeg: { length: 16, width: 8, offsetX: 7, offsetY: 10 },
+            leftLowerLeg: { length: 16, width: 7, offsetX: -7, offsetY: 24 },
+            rightLowerLeg: { length: 16, width: 7, offsetX: 7, offsetY: 24 },
+            foot: { length: 10, width: 6 }
+        };
+        
+        this.colors = {
+            skin: '#FFDAB9',
+            skinLight: '#FFF5EE',
+            hair: '#5D4037',
+            hairLight: '#8D6E63',
+            eyes: '#4A4A4A',
+            iris: '#2E7D32',
+            shirt: '#E53935',
+            shirtDark: '#B71C1C',
+            pants: '#1565C0',
+            pantsDark: '#0D47A1',
+            shoes: '#212121',
+            shoesLight: '#424242'
         };
     }
 
@@ -23,9 +44,9 @@ class PlayerRenderer {
 
     update(deltaTime) {
         if (this.isWalking) {
-            this.animationTime += deltaTime * 12;
+            this.animationTime += deltaTime * 15;
         } else {
-            this.animationTime *= 0.9;
+            this.animationTime *= 0.95;
         }
     }
 
@@ -36,6 +57,7 @@ class PlayerRenderer {
         const angle = this.getDirectionAngle(direction);
         ctx.rotate(angle);
 
+        this.drawShadow(ctx);
         this.drawBody(ctx);
 
         ctx.restore();
@@ -51,143 +73,215 @@ class PlayerRenderer {
         }
     }
 
+    drawShadow(ctx) {
+        const swingOffset = this.isWalking ? Math.sin(this.animationTime) * 3 : 0;
+        const shadowScale = this.isWalking ? 0.85 + Math.sin(this.animationTime) * 0.08 : 0.92;
+        
+        ctx.save();
+        ctx.translate(swingOffset, 35);
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 22 * shadowScale, 8 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+
     drawBody(ctx) {
-        this.drawHead(ctx);
+        this.drawLegs(ctx);
         this.drawTorso(ctx);
         this.drawArms(ctx);
-        this.drawLegs(ctx);
+        this.drawHead(ctx);
     }
 
     drawHead(ctx) {
-        const head = this.bodyParts.head;
-        
-        const bounce = this.isWalking ? Math.sin(this.animationTime) * 2 : 0;
+        const head = this.bodyConfig.head;
+        const bounce = this.isWalking ? Math.sin(this.animationTime) * 2.5 : 0;
         const headY = head.offsetY + bounce;
 
         ctx.save();
         ctx.translate(0, headY);
 
-        ctx.fillStyle = '#FFDAB9';
+        ctx.fillStyle = this.colors.skin;
         ctx.beginPath();
         ctx.ellipse(0, 0, head.width / 2, head.height / 2, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#8B4513';
+        ctx.fillStyle = this.colors.hair;
         ctx.beginPath();
-        ctx.ellipse(0, -head.height / 2 + 2, head.width / 2, 5, 0, Math.PI, 0);
+        ctx.ellipse(0, -head.height / 2 + 4, head.width / 2 + 2, 7, 0, Math.PI, 0);
         ctx.fill();
 
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = this.colors.hairLight;
         ctx.beginPath();
-        ctx.arc(-4, -2, 2.5, 0, Math.PI * 2);
-        ctx.arc(4, -2, 2.5, 0, Math.PI * 2);
+        ctx.ellipse(-3, -head.height / 2 + 6, 4, 3, -0.3, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = '#FF69B4';
+        ctx.fillStyle = '#1a1a1a';
         ctx.beginPath();
-        ctx.arc(-6, 3, 2, 0, Math.PI * 2);
-        ctx.arc(6, 3, 2, 0, Math.PI * 2);
+        ctx.arc(-5, -2, 3, 0, Math.PI * 2);
+        ctx.arc(5, -2, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = this.colors.iris;
+        ctx.beginPath();
+        ctx.arc(-5, -2, 1.5, 0, Math.PI * 2);
+        ctx.arc(5, -2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(-4, -3, 0.8, 0, Math.PI * 2);
+        ctx.arc(6, -3, 0.8, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = '#FFB6C1';
         ctx.beginPath();
-        ctx.arc(0, 5, 3, 0, Math.PI);
+        ctx.ellipse(-7, 4, 3, 2, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(7, 4, 3, 2, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#D4A5A5';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 6, 4, 0.1 * Math.PI, 0.9 * Math.PI);
+        ctx.stroke();
+
+        ctx.fillStyle = '#FF69B4';
+        ctx.beginPath();
+        ctx.ellipse(0, 7, 2, 1.5, 0, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();
     }
 
     drawTorso(ctx) {
-        const torso = this.bodyParts.torso;
+        const torso = this.bodyConfig.torso;
 
-        ctx.fillStyle = '#4a69bd';
+        ctx.fillStyle = this.colors.shirt;
         ctx.beginPath();
-        ctx.roundRect(-torso.width / 2, torso.offsetY, torso.width, torso.height, 4);
+        ctx.roundRect(-torso.width / 2, torso.offsetY, torso.width, torso.height, 5);
         ctx.fill();
 
-        ctx.fillStyle = '#3a5a9d';
+        ctx.fillStyle = this.colors.shirtDark;
         ctx.beginPath();
-        ctx.roundRect(-torso.width / 2 + 2, torso.offsetY + 2, torso.width - 4, torso.height - 4, 2);
+        ctx.roundRect(-torso.width / 2 + 3, torso.offsetY + 3, torso.width - 6, torso.height - 6, 3);
         ctx.fill();
 
-        ctx.fillStyle = '#5a79cd';
+        ctx.fillStyle = '#EF5350';
         ctx.beginPath();
-        ctx.roundRect(-torso.width / 2 + 4, torso.offsetY + 4, torso.width - 8, torso.height / 2 - 2, 2);
+        ctx.roundRect(-torso.width / 2 + 5, torso.offsetY + 5, torso.width - 10, torso.height / 2 - 3, 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#FFCDD2';
+        ctx.beginPath();
+        ctx.roundRect(-torso.width / 2 + 2, torso.offsetY + torso.height - 3, torso.width - 4, 3, 1);
         ctx.fill();
     }
 
     drawArms(ctx) {
-        const leftArm = this.bodyParts.leftArm;
-        const rightArm = this.bodyParts.rightArm;
+        const swing = this.isWalking ? Math.sin(this.animationTime) * 0.5 : 0;
+        const elbowBend = this.isWalking ? Math.sin(this.animationTime + Math.PI / 2) * 0.3 : 0;
 
-        const armSwing = this.isWalking ? Math.sin(this.animationTime) * 0.4 : 0;
-
-        this.drawArm(ctx, leftArm.offsetX, leftArm.offsetY, leftArm.length, leftArm.width, -armSwing);
-        this.drawArm(ctx, rightArm.offsetX, rightArm.offsetY, rightArm.length, rightArm.width, armSwing);
+        this.drawArm(ctx, 'left', swing, elbowBend);
+        this.drawArm(ctx, 'right', -swing, -elbowBend);
     }
 
-    drawArm(ctx, baseX, baseY, length, width, angle) {
+    drawArm(ctx, side, shoulderAngle, elbowAngle) {
+        const upperArm = this.bodyConfig[side + 'UpperArm'];
+        const lowerArm = this.bodyConfig[side + 'LowerArm'];
+        const sign = side === 'left' ? 1 : -1;
+
         ctx.save();
-        ctx.translate(baseX, baseY);
-        ctx.rotate(angle);
+        ctx.translate(upperArm.offsetX * sign, upperArm.offsetY);
+        ctx.rotate(shoulderAngle);
 
-        ctx.fillStyle = '#FFDAB9';
+        ctx.fillStyle = this.colors.skin;
         ctx.beginPath();
-        ctx.roundRect(-width / 2, 0, width, length, 3);
+        ctx.roundRect(-upperArm.width / 2, 0, upperArm.width, upperArm.length, 3);
         ctx.fill();
 
-        ctx.fillStyle = '#CD853F';
+        ctx.save();
+        ctx.translate(0, upperArm.length);
+        ctx.rotate(elbowAngle * sign);
+
+        ctx.fillStyle = this.colors.skin;
         ctx.beginPath();
-        ctx.roundRect(-width / 2 + 1, length - 6, width - 2, 6, 2);
+        ctx.roundRect(-lowerArm.width / 2, 0, lowerArm.width, lowerArm.length, 3);
         ctx.fill();
 
+        ctx.fillStyle = this.colors.shoes;
+        ctx.beginPath();
+        ctx.roundRect(-lowerArm.width / 2 + 1, lowerArm.length - 5, lowerArm.width - 2, 5, 2);
+        ctx.fill();
+
+        ctx.restore();
         ctx.restore();
     }
 
     drawLegs(ctx) {
-        const leftLeg = this.bodyParts.leftLeg;
-        const rightLeg = this.bodyParts.rightLeg;
+        const swing = this.isWalking ? Math.sin(this.animationTime) * 0.55 : 0;
+        const kneeBend = this.isWalking ? Math.abs(Math.sin(this.animationTime)) * 0.6 : 0;
 
-        const legSwing = this.isWalking ? Math.sin(this.animationTime) * 0.5 : 0;
-
-        this.drawLeg(ctx, leftLeg.offsetX, leftLeg.offsetY, leftLeg.length, leftLeg.width, legSwing);
-        this.drawLeg(ctx, rightLeg.offsetX, rightLeg.offsetY, rightLeg.length, rightLeg.width, -legSwing);
+        this.drawLeg(ctx, 'left', swing, kneeBend);
+        this.drawLeg(ctx, 'right', -swing, kneeBend);
     }
 
-    drawLeg(ctx, baseX, baseY, length, width, angle) {
+    drawLeg(ctx, side, hipAngle, kneeBend) {
+        const upperLeg = this.bodyConfig[side + 'UpperLeg'];
+        const lowerLeg = this.bodyConfig[side + 'LowerLeg'];
+        const foot = this.bodyConfig.foot;
+        const sign = side === 'left' ? 1 : -1;
+
         ctx.save();
-        ctx.translate(baseX, baseY);
-        ctx.rotate(angle);
+        ctx.translate(upperLeg.offsetX * sign, upperLeg.offsetY);
+        ctx.rotate(hipAngle);
 
-        ctx.fillStyle = '#2c3e50';
+        ctx.fillStyle = this.colors.pants;
         ctx.beginPath();
-        ctx.roundRect(-width / 2, 0, width, length, 3);
+        ctx.roundRect(-upperLeg.width / 2, 0, upperLeg.width, upperLeg.length, 4);
         ctx.fill();
 
-        ctx.fillStyle = '#34495e';
+        ctx.fillStyle = this.colors.pantsDark;
         ctx.beginPath();
-        ctx.roundRect(-width / 2 + 1, 0, width - 2, length / 2, 2);
+        ctx.roundRect(-upperLeg.width / 2 + 2, 0, upperLeg.width - 4, upperLeg.length / 2, 2);
         ctx.fill();
 
-        ctx.fillStyle = '#7f8c8d';
+        ctx.save();
+        ctx.translate(0, upperLeg.length);
+        ctx.rotate(-kneeBend * sign);
+
+        ctx.fillStyle = this.colors.pants;
         ctx.beginPath();
-        ctx.roundRect(-width / 2 + 1, length - 8, width - 2, 8, 2);
+        ctx.roundRect(-lowerLeg.width / 2, 0, lowerLeg.width, lowerLeg.length, 4);
+        ctx.fill();
+
+        ctx.fillStyle = this.colors.pantsDark;
+        ctx.beginPath();
+        ctx.roundRect(-lowerLeg.width / 2 + 1.5, 0, lowerLeg.width - 3, lowerLeg.length / 2, 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(0, lowerLeg.length);
+        
+        const footAngle = this.isWalking ? Math.sin(this.animationTime + (side === 'left' ? 0 : Math.PI)) * 0.3 : 0;
+        ctx.rotate(footAngle);
+
+        ctx.fillStyle = this.colors.shoes;
+        ctx.beginPath();
+        ctx.roundRect(-foot.width / 2, 0, foot.length, foot.width, 2);
+        ctx.fill();
+
+        ctx.fillStyle = this.colors.shoesLight;
+        ctx.beginPath();
+        ctx.roundRect(-foot.width / 2 + 1, 1, foot.length - 2, 2, 1);
         ctx.fill();
 
         ctx.restore();
-    }
-
-    drawShadow(ctx, x, y) {
-        ctx.save();
-        ctx.translate(x, y + 25);
-        
-        const shadowScale = this.isWalking ? 0.8 + Math.sin(this.animationTime) * 0.1 : 0.9;
-        
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 18 * shadowScale, 6 * shadowScale, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
+        ctx.restore();
         ctx.restore();
     }
 }

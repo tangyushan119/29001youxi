@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人物模型测试 - 行走动画展示</title>
+    <title>人物模型测试 - 完整人形展示</title>
     <style>
         * {
             margin: 0;
@@ -13,7 +13,7 @@
         
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: linear-gradient(135deg, #0c0c1e 0%, #1a1a3e 50%, #2a2a5e 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -23,143 +23,230 @@
         }
         
         h1 {
-            margin-bottom: 20px;
-            color: #4a69bd;
-            font-size: 28px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 25px;
+            color: #64b5f6;
+            font-size: 32px;
+            text-shadow: 2px 2px 8px rgba(100, 181, 246, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .hero-icon {
+            font-size: 36px;
         }
         
         .container {
             display: flex;
-            gap: 30px;
+            gap: 40px;
             flex-wrap: wrap;
             justify-content: center;
             align-items: flex-start;
+            max-width: 1200px;
         }
         
         .canvas-wrapper {
-            background: rgba(0,0,0,0.3);
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            border: 1px solid rgba(74, 105, 189, 0.3);
+            background: rgba(0,0,0,0.4);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.4), 0 0 60px rgba(100, 181, 246, 0.1);
+            border: 1px solid rgba(100, 181, 246, 0.2);
         }
         
         canvas {
-            border-radius: 8px;
-            background: #1a1a2e;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
             display: block;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
         }
         
         .info-panel {
-            background: rgba(0,0,0,0.4);
-            border-radius: 12px;
-            padding: 25px;
-            width: 320px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            border: 1px solid rgba(74, 105, 189, 0.3);
+            background: rgba(0,0,0,0.45);
+            border-radius: 16px;
+            padding: 30px;
+            width: 340px;
+            box-shadow: 0 12px 48px rgba(0,0,0,0.4), 0 0 60px rgba(100, 181, 246, 0.1);
+            border: 1px solid rgba(100, 181, 246, 0.2);
         }
         
         .info-title {
-            color: #4a69bd;
-            font-size: 18px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(74, 105, 189, 0.3);
+            color: #64b5f6;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid rgba(100, 181, 246, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, #64b5f6, #42a5f5);
+            border-radius: 2px;
         }
         
         .control-info {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         
         .control-info h3 {
-            color: #e74c3c;
-            margin-bottom: 10px;
+            color: #ef5350;
+            margin-bottom: 12px;
             font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-info h3::before {
+            content: '🎮';
         }
         
         .control-list {
             list-style: none;
-            padding-left: 15px;
+            padding-left: 10px;
         }
         
         .control-list li {
-            margin: 8px 0;
-            padding: 8px 12px;
+            margin: 10px 0;
+            padding: 12px 15px;
             background: rgba(255,255,255,0.05);
-            border-radius: 6px;
+            border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: all 0.2s ease;
+        }
+        
+        .control-list li:hover {
+            background: rgba(100, 181, 246, 0.1);
+            transform: translateX(5px);
         }
         
         .key {
-            background: rgba(74, 105, 189, 0.5);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
+            background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(100, 181, 246, 0.3);
+        }
+        
+        .direction-display {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(100, 181, 246, 0.15), rgba(66, 165, 245, 0.1));
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(100, 181, 246, 0.2);
+        }
+        
+        .direction-arrow {
+            font-size: 56px;
+            margin-bottom: 12px;
+            color: #ffd54f;
+            text-shadow: 0 0 20px rgba(255, 213, 79, 0.5);
+            transition: transform 0.3s ease;
+        }
+        
+        .direction-text {
+            color: #ffd54f;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 213, 79, 0.3);
         }
         
         .animation-states {
-            margin-top: 20px;
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
         }
         
         .state-item {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .state-item:last-child {
+            border-bottom: none;
         }
         
         .state-label {
-            color: #b8c5d6;
+            color: #b0bec5;
+            font-size: 14px;
         }
         
         .state-value {
             font-weight: bold;
-            color: #2ecc71;
-        }
-        
-        .direction-display {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(74, 105, 189, 0.2);
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .direction-arrow {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-        
-        .direction-text {
-            color: #f1c40f;
-            font-size: 18px;
-            font-weight: bold;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            color: #66bb6a;
         }
         
         .features-list {
-            margin-top: 20px;
-            padding-left: 15px;
+            margin-top: 25px;
+            padding-left: 20px;
         }
         
         .features-list li {
-            margin: 8px 0;
-            color: #b8c5d6;
+            margin: 12px 0;
+            color: #cfd8dc;
             position: relative;
-            padding-left: 20px;
+            padding-left: 25px;
+            font-size: 14px;
+            line-height: 1.5;
         }
         
         .features-list li::before {
             content: '✓';
             position: absolute;
             left: 0;
-            color: #2ecc71;
+            color: #66bb6a;
+            font-weight: bold;
+            background: rgba(102, 187, 106, 0.2);
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
         }
         
-        @media (max-width: 768px) {
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #78909c;
+            margin-top: 4px;
+        }
+        
+        @media (max-width: 800px) {
             .container {
                 flex-direction: column;
                 align-items: center;
@@ -169,19 +256,27 @@
                 width: 100%;
                 max-width: 400px;
             }
+            
+            h1 {
+                font-size: 24px;
+                text-align: center;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>🎮 人物模型测试 - 行走动画展示</h1>
+    <h1>
+        <span class="hero-icon">🦸</span>
+        人物模型测试 - 完整人形展示
+    </h1>
     
     <div class="container">
         <div class="canvas-wrapper">
-            <canvas id="characterCanvas" width="400" height="400"></canvas>
+            <canvas id="characterCanvas" width="450" height="450"></canvas>
         </div>
         
         <div class="info-panel">
-            <div class="info-title">🎯 控制说明</div>
+            <div class="info-title">控制说明</div>
             
             <div class="control-info">
                 <h3>移动控制</h3>
@@ -190,7 +285,7 @@
                     <li><span>向下移动</span><span class="key">S / ↓</span></li>
                     <li><span>向左移动</span><span class="key">A / ←</span></li>
                     <li><span>向右移动</span><span class="key">D / →</span></li>
-                    <li><span>停止移动</span><span class="key">空格键</span></li>
+                    <li><span>停止移动</span><span class="key">Space</span></li>
                 </ul>
             </div>
             
@@ -210,14 +305,27 @@
                 </div>
             </div>
             
-            <div class="info-title">✨ 人物特性</div>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-value" id="statX">225</div>
+                    <div class="stat-label">X 位置</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statY">225</div>
+                    <div class="stat-label">Y 位置</div>
+                </div>
+            </div>
+            
+            <div class="info-title">人物特性</div>
             <ul class="features-list">
-                <li>完整的人体结构（头部、躯干、四肢）</li>
-                <li>真实的行走动画（手臂摆动、腿部迈步）</li>
-                <li>头部随行走轻微上下晃动</li>
-                <li>动态阴影效果</li>
-                <li>流畅的转向动画</li>
-                <li>自然的肤色和衣着配色</li>
+                <li>完整人体结构：头部、躯干、四肢（上臂/下臂/大腿/小腿）</li>
+                <li>精美的头部细节：头发、眼睛、腮红、微笑表情</li>
+                <li>流畅行走动画：手臂摆动、肘部弯曲、膝盖弯曲</li>
+                <li>真实步态：脚部抬起、迈步、落地动作</li>
+                <li>头部随行走自然晃动</li>
+                <li>动态阴影效果随步伐变化</li>
+                <li>四个方向平滑转向</li>
+                <li>自然配色：红色上衣、蓝色裤子、黑色鞋子</li>
             </ul>
         </div>
     </div>
@@ -234,6 +342,8 @@
         const directionText = document.getElementById('directionText');
         const walkState = document.getElementById('walkState');
         const animationFrame = document.getElementById('animationFrame');
+        const statX = document.getElementById('statX');
+        const statY = document.getElementById('statY');
         
         let playerX = canvas.width / 2;
         let playerY = canvas.height / 2;
@@ -252,10 +362,10 @@
         };
         
         const directionMap = {
-            up: { x: 0, y: -3, arrow: '↑', text: '向上' },
-            down: { x: 0, y: 3, arrow: '↓', text: '向下' },
-            left: { x: -3, y: 0, arrow: '←', text: '向左' },
-            right: { x: 3, y: 0, arrow: '→', text: '向右' }
+            up: { x: 0, y: -3.5, arrow: '↑', text: '向上' },
+            down: { x: 0, y: 3.5, arrow: '↓', text: '向下' },
+            left: { x: -3.5, y: 0, arrow: '←', text: '向左' },
+            right: { x: 3.5, y: 0, arrow: '→', text: '向右' }
         };
         
         function updateDirectionDisplay(newDirection) {
@@ -308,10 +418,10 @@
         }
         
         function drawGrid() {
-            ctx.strokeStyle = 'rgba(74, 105, 189, 0.1)';
+            ctx.strokeStyle = 'rgba(100, 181, 246, 0.08)';
             ctx.lineWidth = 1;
             
-            const gridSize = 40;
+            const gridSize = 45;
             
             for (let x = 0; x <= canvas.width; x += gridSize) {
                 ctx.beginPath();
@@ -328,6 +438,15 @@
             }
         }
         
+        function drawGround() {
+            const gradient = ctx.createLinearGradient(0, canvas.height - 100, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(76, 175, 80, 0.1)');
+            gradient.addColorStop(1, 'rgba(67, 142, 69, 0.2)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+        }
+        
         let lastTime = performance.now();
         
         function animate(currentTime) {
@@ -337,6 +456,7 @@
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
+            drawGround();
             drawGrid();
             
             if (isWalking) {
@@ -344,16 +464,17 @@
                 playerX += move.x;
                 playerY += move.y;
                 
-                playerX = Math.max(50, Math.min(canvas.width - 50, playerX));
-                playerY = Math.max(50, Math.min(canvas.height - 50, playerY));
+                playerX = Math.max(60, Math.min(canvas.width - 60, playerX));
+                playerY = Math.max(60, Math.min(canvas.height - 60, playerY));
             }
             
             playerRenderer.update(deltaTime);
-            playerRenderer.drawShadow(ctx, playerX, playerY);
             playerRenderer.draw(ctx, playerX, playerY, direction);
             
             walkState.textContent = isWalking ? '行走中' : '静止';
             animationFrame.textContent = playerRenderer.animationTime.toFixed(2);
+            statX.textContent = Math.round(playerX);
+            statY.textContent = Math.round(playerY);
             
             requestAnimationFrame(animate);
         }
