@@ -52,15 +52,18 @@ class InventoryInteraction {
             }
         });
 
-        gridElement.addEventListener('mouseenter', (e) => {
+        gridElement.addEventListener('mouseover', (e) => {
             const itemElement = e.target.closest('.inventory-item');
             if (itemElement) {
                 this.handleItemHover(itemElement, e);
             }
         });
 
-        gridElement.addEventListener('mouseleave', () => {
-            this.renderer.hideTooltip();
+        gridElement.addEventListener('mouseout', (e) => {
+            const itemElement = e.target.closest('.inventory-item');
+            if (itemElement) {
+                this.renderer.hideTooltip();
+            }
         });
 
         this.setupTabHoverEffects(categoryTabs);

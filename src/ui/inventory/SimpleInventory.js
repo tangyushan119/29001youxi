@@ -1,3 +1,5 @@
+import { InventoryItems } from './inventory-items.js';
+
 class SimpleInventory {
     constructor() {
         this.isOpen = false;
@@ -7,20 +9,16 @@ class SimpleInventory {
         this.onCloseCallback = null;
         this.onItemUseCallback = null;
         
-        this.itemConfig = {
-            seeds: { name: '种子', icon: '🌱', color: 'rgba(46, 204, 113, 0.3)', description: '用于种植作物，可以在农田中播种' },
-            food: { name: '食物', icon: '🍞', color: 'rgba(241, 196, 15, 0.3)', description: '恢复饥饿值，维持生存必需' },
-            water: { name: '水', icon: '💧', color: 'rgba(52, 152, 219, 0.3)', description: '恢复口渴值，保持水分充足' },
-            wood: { name: '木材', icon: '🪵', color: 'rgba(139, 69, 19, 0.3)', description: '基础材料，可用于制作工具和建筑' },
-            stone: { name: '石头', icon: '🪨', color: 'rgba(112, 128, 144, 0.3)', description: '坚硬的石头，用于建造和制作' },
-            grass: { name: '杂草', icon: '🌿', color: 'rgba(34, 139, 34, 0.3)', description: '普通杂草，可用于喂养动物或制作' },
-            equipment: { name: '装备', icon: '⚔️', color: 'rgba(155, 89, 182, 0.3)', description: '装备物品，提升角色属性' },
-            medicine: { name: '药品', icon: '🧪', color: 'rgba(230, 126, 34, 0.3)', description: '治疗药品，恢复生命值' },
-            iron: { name: '铁矿石', icon: '⚙️', color: 'rgba(108, 117, 125, 0.3)', description: '珍贵的金属矿石，用于锻造高级装备' },
-            leather: { name: '皮革', icon: '🧵', color: 'rgba(139, 90, 43, 0.3)', description: '动物皮革，用于制作护甲' },
-            cloth: { name: '布料', icon: '🎭', color: 'rgba(186, 156, 189, 0.3)', description: '织物材料，用于制作衣物' },
-            gold: { name: '金币', icon: '🪙', color: 'rgba(255, 215, 0, 0.3)', description: '珍贵的货币，用于交易' }
+        this.getItemConfig = (itemType) => {
+            return {
+                name: InventoryItems.getItemName(itemType),
+                icon: InventoryItems.getItemIcon(itemType),
+                color: InventoryItems.getItemBackgroundColor(itemType),
+                description: InventoryItems.getItemDescription(itemType)
+            };
         };
+        
+        this.itemTypes = InventoryItems.getAllItemTypes();
         
         this.style = {
             modalWidth: 640,
@@ -243,7 +241,7 @@ class SimpleInventory {
             
             if (i < items.length) {
                 const item = items[i];
-                const itemConfig = this.itemConfig[item.type] || { name: item.type, icon: '📦', color: 'rgba(255, 255, 255, 0.1)' };
+                const itemConfig = this.getItemConfig(item.type) || { name: item.type, icon: '📦', color: 'rgba(255, 255, 255, 0.1)' };
                 
                 const itemElement = document.createElement('div');
                 itemElement.className = 'inventory-item';
@@ -311,7 +309,7 @@ class SimpleInventory {
         const items = [];
         
         const categoryMap = {
-            all: Object.keys(this.itemConfig),
+            all: this.itemTypes,
             food: ['food', 'water', 'medicine'],
             materials: ['wood', 'stone', 'grass', 'iron', 'leather', 'cloth', 'gold', 'equipment'],
             seeds: ['seeds']
@@ -322,7 +320,7 @@ class SimpleInventory {
         for (const itemType of allowedTypes) {
             if (this.inventoryData[itemType] && this.inventoryData[itemType] > 0) {
                 const count = this.inventoryData[itemType];
-                const maxStack = this.itemConfig[itemType]?.maxStack || 99;
+                const maxStack = InventoryItems.getMaxStackSize(itemType);
                 
                 if (count <= maxStack) {
                     items.push({ type: itemType, count });
@@ -352,7 +350,7 @@ class SimpleInventory {
 
     showTooltip(element, itemType, itemCount) {
         const rect = element.getBoundingClientRect();
-        const itemConfig = this.itemConfig[itemType] || { name: itemType, icon: '📦', description: '普通物品' };
+        const itemConfig = this.getItemConfig(itemType) || { name: itemType, icon: '📦', description: '普通物品' };
         
         let tooltipX = rect.left + 10;
         let tooltipY = rect.top - 10;

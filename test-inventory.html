@@ -220,22 +220,15 @@
 
     <script type="module">
         import { SimpleInventory } from './src/ui/inventory/SimpleInventory.js';
+        import { InventoryItems } from './src/ui/inventory/inventory-items.js';
 
         let inventoryManager = null;
 
-        const itemConfig = {
-            seeds: { name: '种子', icon: '🌱' },
-            food: { name: '食物', icon: '🍞' },
-            water: { name: '水', icon: '💧' },
-            wood: { name: '木材', icon: '🪵' },
-            stone: { name: '石头', icon: '🪨' },
-            grass: { name: '杂草', icon: '🌿' },
-            equipment: { name: '装备', icon: '⚔️' },
-            medicine: { name: '药品', icon: '🧪' },
-            iron: { name: '铁矿石', icon: '⚙️' },
-            leather: { name: '皮革', icon: '🧵' },
-            cloth: { name: '布料', icon: '🎭' },
-            gold: { name: '金币', icon: '🪙' }
+        const getItemConfig = (itemType) => {
+            return {
+                name: InventoryItems.getItemName(itemType),
+                icon: InventoryItems.getItemIcon(itemType)
+            };
         };
 
         const testInventoryData = {
@@ -280,7 +273,7 @@
 
             for (const [type, count] of Object.entries(data)) {
                 if (count > 0) {
-                    const item = itemConfig[type] || { name: type, icon: '📦' };
+                    const item = getItemConfig(type) || { name: type, icon: '📦' };
                     const tag = document.createElement('div');
                     tag.className = 'inventory-item-tag';
                     tag.innerHTML = `
@@ -308,7 +301,7 @@
             });
             
             inventoryManager.setOnItemUseCallback((itemType, itemCount) => {
-                const item = itemConfig[itemType] || { name: itemType };
+                const item = getItemConfig(itemType) || { name: itemType };
                 addResult('info', `使用了 ${item.name} x${itemCount}`);
             });
             
