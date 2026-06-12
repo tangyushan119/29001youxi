@@ -27,6 +27,8 @@ class SurvivalGame {
             
             console.log('RenderEngine initialized successfully');
             
+            await this.loadGameResources();
+            
             this.gameScene = new GameScene('main');
             this.gameScene.init(this.engine);
             this.engine.addScene('main', this.gameScene);
@@ -43,6 +45,29 @@ class SurvivalGame {
         } catch (error) {
             console.error('Failed to initialize game:', error);
             this.showErrorModal(error);
+        }
+    }
+
+    async loadGameResources() {
+        if (!this.engine?.resourceManager) {
+            console.warn('ResourceManager not initialized, skipping resource preloading');
+            return;
+        }
+        
+        console.log('Loading game resources...');
+        
+        try {
+            const stats = await this.engine.resourceManager.loadAllResources();
+            
+            const terrainConfig = this.engine.resourceManager.getTerrainConfig();
+            if (terrainConfig) {
+                console.log('Terrain config loaded successfully');
+            }
+            
+            console.log(`Resources loaded: ${stats.loadedTextures}/${stats.totalTextures} textures, ${stats.cachedItems} cached items`);
+            
+        } catch (error) {
+            console.error('Error loading game resources:', error);
         }
     }
 

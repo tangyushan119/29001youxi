@@ -28,7 +28,9 @@ class ResourceManager {
 
     async loadTerrainConfig() {
         const configPath = this.getFullPath('terrain/terrain-config.json');
-        return this.loadJson(configPath, 'terrainConfig');
+        const config = await this.loadJson(configPath, 'terrainConfig');
+        this.terrainConfig = config;
+        return config;
     }
 
     async loadJson(path, cacheKey) {
@@ -130,8 +132,36 @@ class ResourceManager {
         return {
             cachedItems: this.cache.size,
             loadingItems: this.loadingPromises.size,
-            loadedTextures: Object.keys(this.textures).filter(k => this.textures[k] !== null).length
+            loadedTextures: Object.keys(this.textures).filter(k => this.textures[k] !== null).length,
+            totalTextures: Object.keys(this.textures).length,
+            hasTerrainConfig: this.terrainConfig !== null,
+            basePath: this.basePath
         };
+    }
+
+    async loadAllResources() {
+        console.log('Loading all game resources...');
+        
+        const startTime = Date.now();
+        
+        try {
+            await this.loadTerrainConfig();
+            console.log('✓ Terrain config loaded');
+            
+            await this.preloadTextures();
+            console.log('✓ Textures preloaded');
+            
+            const stats = this.getStats();
+            const endTime = Date.now();
+            
+            console.log(`Resource loading completed in ${endTime - startTime}ms`);
+            console.log(`Loaded: ${stats.loadedTextures}/${stats.totalTextures} textures`);
+            
+            return stats;
+        } catch (error) {
+            console.error('Failed to load all resources:', error);
+            throw error;
+        }
     }
 }
 

@@ -185,15 +185,29 @@ class GameScene extends Scene {
                 this.restoreRenderItemsFromCache();
             } else {
                 console.log('Generating new world with terrain');
-                this.terrainGenerator = new TerrainGenerator(2000, 2000, 12345);
+                
+                const terrainConfig = this.game?.resourceManager?.getTerrainConfig();
+                let seed = 12345;
+                let width = 2000;
+                let height = 2000;
+                
+                if (terrainConfig) {
+                    seed = terrainConfig.seed || seed;
+                    width = terrainConfig.worldWidth || width;
+                    height = terrainConfig.worldHeight || height;
+                    console.log('Using terrain config:', terrainConfig);
+                }
+                
+                this.terrainGenerator = new TerrainGenerator(width, height, seed);
                 this.terrainTiles = this.terrainGenerator.generateTerrain();
                 
                 this.world = {
-                    width: 2000,
-                    height: 2000,
+                    width: width,
+                    height: height,
                     tiles: this.terrainTiles,
                     resources: [],
-                    structures: []
+                    structures: [],
+                    terrainConfig: terrainConfig
                 };
                 
                 this.generateWorld();
