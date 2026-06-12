@@ -1,4 +1,5 @@
 import { ResourceCache } from '../core/ResourceCache.js';
+import { ResourceManager } from '../core/ResourceManager.js';
 import { RenderEngine } from '../core/RenderEngine.js';
 import { InputController } from '../core/InputController.js';
 import { UIManager } from '../core/UIManager.js';
@@ -49,6 +50,8 @@ class GameEngine {
             await this.initializeRenderEngine();
 
             this.resourceCache = new ResourceCache();
+            this.resourceManager = new ResourceManager('assets');
+            await this.resourceManager.initialize();
             this.sceneCache = new SceneCache();
             this.inputController = new InputController();
             this.uiManager = new UIManager();
