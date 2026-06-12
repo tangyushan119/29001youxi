@@ -39,7 +39,7 @@ class PlayerRenderer {
             ctx.scale(-1, 1);
         }
 
-        this.drawShadow(ctx, isWalking, animationTime, direction);
+        this.drawShadow(ctx, isWalking, animationTime);
         this.drawBody(ctx, isWalking, animationTime, direction);
 
         ctx.restore();
