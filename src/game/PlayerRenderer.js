@@ -206,11 +206,11 @@ class PlayerRenderer {
         const swing = isWalking ? Math.sin(animationTime) * 0.55 : 0;
         const kneeBend = isWalking ? Math.abs(Math.sin(animationTime)) * 0.6 : 0;
 
-        this.drawLeg(ctx, 'left', swing, kneeBend);
-        this.drawLeg(ctx, 'right', -swing, kneeBend);
+        this.drawLeg(ctx, 'left', swing, kneeBend, isWalking, animationTime);
+        this.drawLeg(ctx, 'right', -swing, kneeBend, isWalking, animationTime);
     }
 
-    drawLeg(ctx, side, hipAngle, kneeBend) {
+    drawLeg(ctx, side, hipAngle, kneeBend, isWalking, animationTime) {
         const upperLeg = this.bodyConfig[side + 'UpperLeg'];
         const lowerLeg = this.bodyConfig[side + 'LowerLeg'];
         const foot = this.bodyConfig.foot;
