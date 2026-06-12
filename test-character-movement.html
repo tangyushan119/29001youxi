@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人物移动渲染测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .canvas-wrapper {
+            background: #0f0f1a;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            border-radius: 8px;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            color: #fff;
+            min-width: 250px;
+        }
+
+        .controls h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #ffd700;
+        }
+
+        .direction-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .dir-btn {
+            padding: 12px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            transition: all 0.2s ease;
+        }
+
+        .dir-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .dir-btn:active {
+            transform: scale(0.95);
+        }
+
+        .dir-btn.up { grid-column: 2; grid-row: 1; }
+        .dir-btn.left { grid-column: 1; grid-row: 2; }
+        .dir-btn.down { grid-column: 2; grid-row: 2; }
+        .dir-btn.right { grid-column: 3; grid-row: 2; }
+
+        .status {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .status p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #b8c5d6;
+        }
+
+        .status span {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .keyboard-hint {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .legend h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #ffd700;
+        }
+
+        .legend p {
+            margin: 5px 0;
+            font-size: 12px;
+            color: #b8c5d6;
+        }
+
+        .test-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 4px solid #ffd700;
+            border-radius: 0 8px 8px 0;
+            color: #ffd700;
+            font-size: 14px;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <h1>人物移动渲染测试</h1>
+    
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+        
+        <div class="controls">
+            <h2>方向控制</h2>
+            <div class="direction-buttons">
+                <button class="dir-btn up" data-dir="up">↑</button>
+                <button class="dir-btn left" data-dir="left">←</button>
+                <button class="dir-btn down" data-dir="down">↓</button>
+                <button class="dir-btn right" data-dir="right">→</button>
+            </div>
+            
+            <div class="status">
+                <p>当前方向: <span id="current-direction">down</span></p>
+                <p>位置: <span id="position">200, 200</span></p>
+                <p>行走状态: <span id="is-walking">false</span></p>
+            </div>
+            
+            <div class="keyboard-hint">
+                键盘: W/A/S/D 或 方向键
+            </div>
+            
+            <div class="legend">
+                <h3>测试要点</h3>
+                <p>• 人物移动时仅自身翻转，背景保持不变</p>
+                <p>• 向左/右移动时人物朝向正确</p>
+                <p>• 动画平滑流畅</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-note">
+        <strong>测试说明：</strong>点击方向按钮或使用键盘控制人物移动，观察人物朝向变化是否正确，背景是否保持稳定不翻转。修复后，人物向左/右移动时应仅翻转自身，而不是旋转整个画面。
+    </div>
+
+    <script type="module">
+        import { PlayerRenderer } from './src/game/PlayerRenderer.js';
+
+        class TestPlayer {
+            constructor() {
+                this.x = 200;
+                this.y = 200;
+                this.width = 32;
+                this.height = 48;
+                this.direction = 'down';
+                this.speed = 4;
+                this.isWalking = false;
+                this.animationTime = 0;
+            }
+
+            move(direction) {
+                this.direction = direction;
+                this.isWalking = true;
+                
+                switch(direction) {
+                    case 'up': this.y -= this.speed; break;
+                    case 'down': this.y += this.speed; break;
+                    case 'left': this.x -= this.speed; break;
+                    case 'right': this.x += this.speed; break;
+                }
+                
+                this.x = Math.max(20, Math.min(380, this.x));
+                this.y = Math.max(20, Math.min(380, this.y));
+            }
+
+            stopWalking() {
+                this.isWalking = false;
+            }
+
+            getCenterX() { return this.x + this.width / 2; }
+            getCenterY() { return this.y + this.height / 2; }
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const player = new TestPlayer();
+        const playerRenderer = new PlayerRenderer();
+        
+        const keys = {};
+        let lastMoveTime = 0;
+
+        function drawBackground() {
+            ctx.fillStyle = '#2d3436';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            
+            ctx.fillStyle = '#636e72';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('背景网格 - 用于检测画面翻转', canvas.width / 2, canvas.height - 20);
+            
+            ctx.fillStyle = '#00b894';
+            ctx.beginPath();
+            ctx.moveTo(50, 50);
+            ctx.lineTo(70, 80);
+            ctx.lineTo(30, 80);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px Arial';
+            ctx.fillText('↑', 50, 95);
+            
+            ctx.fillStyle = '#e17055';
+            ctx.beginPath();
+            ctx.moveTo(350, 350);
+            ctx.lineTo(370, 380);
+            ctx.lineTo(330, 380);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.fillText('↓', 350, 395);
+        }
+
+        function update(deltaTime) {
+            if (player.isWalking) {
+                player.animationTime += deltaTime * 15;
+            } else {
+                player.animationTime *= 0.95;
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawBackground();
+            
+            playerRenderer.draw(
+                ctx,
+                player.getCenterX(),
+                player.getCenterY(),
+                player.direction,
+                player.isWalking,
+                player.animationTime
+            );
+            
+            updateStatus();
+        }
+
+        function updateStatus() {
+            document.getElementById('current-direction').textContent = player.direction;
+            document.getElementById('position').textContent = `${Math.round(player.x)}, ${Math.round(player.y)}`;
+            document.getElementById('is-walking').textContent = player.isWalking;
+        }
+
+        function gameLoop(currentTime) {
+            const deltaTime = Math.min((currentTime - lastMoveTime) / 1000, 0.1);
+            lastMoveTime = currentTime;
+            
+            update(deltaTime);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            
+            const keyMap = {
+                'KeyW': 'up',
+                'KeyS': 'down',
+                'KeyA': 'left',
+                'KeyD': 'right',
+                'ArrowUp': 'up',
+                'ArrowDown': 'down',
+                'ArrowLeft': 'left',
+                'ArrowRight': 'right'
+            };
+            
+            if (keyMap[e.code]) {
+                e.preventDefault();
+                player.move(keyMap[e.code]);
+                setTimeout(() => player.stopWalking(), 150);
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        document.querySelectorAll('.dir-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                player.move(btn.dataset.dir);
+                setTimeout(() => player.stopWalking(), 150);
+            });
+        });
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>

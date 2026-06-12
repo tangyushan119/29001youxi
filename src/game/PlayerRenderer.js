@@ -34,8 +34,12 @@ class PlayerRenderer {
         ctx.save();
         ctx.translate(x, y);
 
-        const angle = this.getDirectionAngle(direction);
-        ctx.rotate(angle);
+        const { flipX, rotation } = this.getDirectionTransform(direction);
+        
+        if (flipX) {
+            ctx.scale(-1, 1);
+        }
+        ctx.rotate(rotation);
 
         this.drawShadow(ctx, isWalking, animationTime);
         this.drawBody(ctx, isWalking, animationTime);
@@ -43,13 +47,18 @@ class PlayerRenderer {
         ctx.restore();
     }
 
-    getDirectionAngle(direction) {
+    getDirectionTransform(direction) {
         switch(direction) {
-            case 'up': return 0;
-            case 'down': return Math.PI;
-            case 'left': return -Math.PI / 2;
-            case 'right': return Math.PI / 2;
-            default: return 0;
+            case 'up':
+                return { flipX: false, rotation: 0 };
+            case 'down':
+                return { flipX: false, rotation: Math.PI };
+            case 'left':
+                return { flipX: true, rotation: Math.PI / 2 };
+            case 'right':
+                return { flipX: false, rotation: Math.PI / 2 };
+            default:
+                return { flipX: false, rotation: 0 };
         }
     }
 
