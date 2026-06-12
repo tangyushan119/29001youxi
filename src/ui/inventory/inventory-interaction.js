@@ -61,7 +61,15 @@ class InventoryInteraction {
 
         gridElement.addEventListener('mouseout', (e) => {
             const itemElement = e.target.closest('.inventory-item');
-            if (itemElement) {
+            const relatedTarget = e.relatedTarget?.closest('.inventory-item');
+            if (itemElement && !relatedTarget) {
+                this.renderer.hideTooltip();
+            }
+        });
+
+        gridElement.addEventListener('mouseleave', (e) => {
+            const tooltip = document.querySelector('.inventory-tooltip');
+            if (tooltip) {
                 this.renderer.hideTooltip();
             }
         });
@@ -156,6 +164,8 @@ class InventoryInteraction {
     handleItemHover(itemElement, e) {
         const itemType = itemElement.dataset.itemType;
         const itemCount = parseInt(itemElement.dataset.itemCount);
+        
+        this.renderer.hideTooltip();
         
         const rect = itemElement.getBoundingClientRect();
         this.renderer.renderTooltip(rect.left, rect.top, itemType, itemCount);
