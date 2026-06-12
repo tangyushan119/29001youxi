@@ -1,6 +1,6 @@
 import { PlayerRenderer } from './PlayerRenderer.js';
 import { Player } from './Player.js';
-import { SimpleInventory } from '../ui/inventory/SimpleInventory.js';
+import { InventoryModal } from '../ui/inventory/inventory-modal.js';
 
 class Scene {
     constructor(name) {
@@ -148,7 +148,7 @@ class GameScene extends Scene {
         this.playerRenderer = new PlayerRenderer();
         this.isPlayerWalking = false;
         this.walkAnimationFrame = null;
-        this.inventoryManager = null;
+        this.inventoryModal = null;
     }
 
     load() {
@@ -732,16 +732,16 @@ class GameScene extends Scene {
         
         const inventoryData = { ...this.player.inventory };
         
-        if (!this.inventoryManager) {
-            this.inventoryManager = new SimpleInventory();
+        if (!this.inventoryModal) {
+            this.inventoryModal = new InventoryModal();
         }
         
-        this.inventoryManager.setOnCloseCallback((updatedInventory) => {
+        this.inventoryModal.setOnCloseCallback((updatedInventory) => {
             Object.assign(this.player.inventory, updatedInventory);
             this.savePlayerToCache();
         });
         
-        this.inventoryManager.setOnItemUseCallback((itemType, itemCount) => {
+        this.inventoryModal.setOnItemUseCallback((itemType, itemCount) => {
             if (this.game?.uiManager) {
                 const itemNames = {
                     seeds: '种子',
@@ -761,7 +761,7 @@ class GameScene extends Scene {
             }
         });
         
-        this.inventoryManager.open(inventoryData);
+        this.inventoryModal.open(inventoryData);
     }
 
     openCraft() {
