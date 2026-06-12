@@ -8,18 +8,18 @@ class SimpleInventory {
         this.onItemUseCallback = null;
         
         this.itemConfig = {
-            seeds: { name: '种子', icon: '🌱', color: 'rgba(46, 204, 113, 0.3)' },
-            food: { name: '食物', icon: '🍞', color: 'rgba(241, 196, 15, 0.3)' },
-            water: { name: '水', icon: '💧', color: 'rgba(52, 152, 219, 0.3)' },
-            wood: { name: '木材', icon: '🪵', color: 'rgba(139, 69, 19, 0.3)' },
-            stone: { name: '石头', icon: '🪨', color: 'rgba(112, 128, 144, 0.3)' },
-            grass: { name: '杂草', icon: '🌿', color: 'rgba(34, 139, 34, 0.3)' },
-            equipment: { name: '装备', icon: '⚔️', color: 'rgba(155, 89, 182, 0.3)' },
-            medicine: { name: '药品', icon: '🧪', color: 'rgba(230, 126, 34, 0.3)' },
-            iron: { name: '铁矿石', icon: '⚙️', color: 'rgba(108, 117, 125, 0.3)' },
-            leather: { name: '皮革', icon: '🧵', color: 'rgba(139, 90, 43, 0.3)' },
-            cloth: { name: '布料', icon: '🎭', color: 'rgba(186, 156, 189, 0.3)' },
-            gold: { name: '金币', icon: '🪙', color: 'rgba(255, 215, 0, 0.3)' }
+            seeds: { name: '种子', icon: '🌱', color: 'rgba(46, 204, 113, 0.3)', description: '用于种植作物，可以在农田中播种' },
+            food: { name: '食物', icon: '🍞', color: 'rgba(241, 196, 15, 0.3)', description: '恢复饥饿值，维持生存必需' },
+            water: { name: '水', icon: '💧', color: 'rgba(52, 152, 219, 0.3)', description: '恢复口渴值，保持水分充足' },
+            wood: { name: '木材', icon: '🪵', color: 'rgba(139, 69, 19, 0.3)', description: '基础材料，可用于制作工具和建筑' },
+            stone: { name: '石头', icon: '🪨', color: 'rgba(112, 128, 144, 0.3)', description: '坚硬的石头，用于建造和制作' },
+            grass: { name: '杂草', icon: '🌿', color: 'rgba(34, 139, 34, 0.3)', description: '普通杂草，可用于喂养动物或制作' },
+            equipment: { name: '装备', icon: '⚔️', color: 'rgba(155, 89, 182, 0.3)', description: '装备物品，提升角色属性' },
+            medicine: { name: '药品', icon: '🧪', color: 'rgba(230, 126, 34, 0.3)', description: '治疗药品，恢复生命值' },
+            iron: { name: '铁矿石', icon: '⚙️', color: 'rgba(108, 117, 125, 0.3)', description: '珍贵的金属矿石，用于锻造高级装备' },
+            leather: { name: '皮革', icon: '🧵', color: 'rgba(139, 90, 43, 0.3)', description: '动物皮革，用于制作护甲' },
+            cloth: { name: '布料', icon: '🎭', color: 'rgba(186, 156, 189, 0.3)', description: '织物材料，用于制作衣物' },
+            gold: { name: '金币', icon: '🪙', color: 'rgba(255, 215, 0, 0.3)', description: '珍贵的货币，用于交易' }
         };
         
         this.style = {
@@ -352,7 +352,7 @@ class SimpleInventory {
 
     showTooltip(element, itemType, itemCount) {
         const rect = element.getBoundingClientRect();
-        const itemConfig = this.itemConfig[itemType] || { name: itemType, icon: '📦' };
+        const itemConfig = this.itemConfig[itemType] || { name: itemType, icon: '📦', description: '普通物品' };
         
         const tooltip = document.createElement('div');
         tooltip.className = 'inventory-tooltip';
@@ -381,6 +381,9 @@ class SimpleInventory {
             </div>
             <div style="color: #b8c5d6; font-size: 12px;">
                 数量: <span style="color: #f39c12; font-weight: bold;">${itemCount}</span>
+            </div>
+            <div style="color: #b8c5d6; font-size: 12px; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                ${itemConfig.description}
             </div>
         `;
         

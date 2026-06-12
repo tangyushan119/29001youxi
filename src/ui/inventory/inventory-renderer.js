@@ -247,10 +247,14 @@ class InventoryRenderer {
             water: '恢复口渴值，保持水分充足',
             wood: '基础材料，可用于制作工具和建筑',
             stone: '坚硬的石头，用于建造和制作',
-            grass: '普通杂草，可用于喂养动物',
+            grass: '普通杂草，可用于喂养动物或制作',
             equipment: '装备物品，提升角色属性',
             medicine: '治疗药品，恢复生命值',
-            materials: '各类材料的总称'
+            materials: '各类材料的总称',
+            iron: '珍贵的金属矿石，用于锻造高级装备',
+            leather: '动物皮革，用于制作护甲',
+            cloth: '织物材料，用于制作衣物',
+            gold: '珍贵的货币，用于交易'
         };
         return descriptions[itemType] || '普通物品';
     }
