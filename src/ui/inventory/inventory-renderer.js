@@ -197,6 +197,8 @@ class InventoryRenderer {
     }
 
     renderTooltip(x, y, itemType, itemCount) {
+        this.removeAllTooltips();
+        
         const tooltipWidth = this.style.tooltip.maxWidth;
         const tooltipHeight = 80;
         
@@ -270,6 +272,13 @@ class InventoryRenderer {
                 tooltip.remove();
             }, 200);
         }
+    }
+
+    removeAllTooltips() {
+        const tooltips = document.querySelectorAll('.inventory-tooltip');
+        tooltips.forEach(tooltip => {
+            tooltip.remove();
+        });
     }
 
     updateUsedSlots(count) {

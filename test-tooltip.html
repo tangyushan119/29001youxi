@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背包 Tooltip 测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-header h1 {
+            color: #4a69bd;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .test-header p {
+            color: #b8c5d6;
+            font-size: 14px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            border: 1px solid #4a69bd;
+        }
+
+        .test-title {
+            color: #4a69bd;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-title::before {
+            content: '📋';
+            font-size: 20px;
+        }
+
+        .test-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .test-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(145deg, #4a69bd, #3a5a9d);
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 105, 189, 0.4);
+        }
+
+        .test-btn.secondary {
+            background: linear-gradient(145deg, #6c757d, #495057);
+        }
+
+        .test-btn.danger {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+        }
+
+        .test-btn.success {
+            background: linear-gradient(145deg, #27ae60, #1e8449);
+        }
+
+        .test-results {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .test-result-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(74, 105, 189, 0.2);
+            display: flex;
+            gap: 10px;
+        }
+
+        .test-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-result-item .time {
+            color: #6c757d;
+            font-size: 11px;
+        }
+
+        .test-result-item .message {
+            flex: 1;
+        }
+
+        .test-result-item.pass {
+            color: #27ae60;
+        }
+
+        .test-result-item.fail {
+            color: #e74c3c;
+        }
+
+        .test-result-item.info {
+            color: #3498db;
+        }
+
+        .tooltip-counter {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .tooltip-counter .label {
+            color: #b8c5d6;
+            font-size: 14px;
+        }
+
+        .tooltip-counter .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a69bd;
+        }
+
+        .tooltip-counter .value.warning {
+            color: #e74c3c;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
+        }
+
+        .inventory-overlay {
+            animation: fadeIn 0.2s ease;
+        }
+
+        .inventory-modal {
+            animation: slideUp 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🎒 Tooltip 堆叠残留测试</h1>
+        <p>测试背包物品 tooltip 的显示、隐藏和切换行为</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">测试操作</div>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testOpenInventory()">
+                <span>🎒</span> 打开背包测试
+            </button>
+            <button class="test-btn secondary" onclick="testFastSwitch()">
+                <span>⚡</span> 快速切换测试
+            </button>
+            <button class="test-btn secondary" onclick="clearResults()">
+                <span>🗑️</span> 清空日志
+            </button>
+        </div>
+        
+        <div class="tooltip-counter">
+            <span class="label">当前 tooltip 数量:</span>
+            <span class="value" id="tooltipCount">0</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">测试日志</div>
+        <div class="test-results" id="testResults"></div>
+    </div>
+
+    <script type="module">
+        import { SimpleInventory } from './src/ui/inventory/SimpleInventory.js';
+        import { InventoryItems } from './src/ui/inventory/inventory-items.js';
+
+        let inventoryManager = null;
+        let tooltipInterval = null;
+
+        const testInventoryData = {
+            seeds: 15,
+            food: 8,
+            water: 12,
+            wood: 25,
+            stone: 18,
+            grass: 30,
+            medicine: 5,
+            iron: 10,
+            leather: 3,
+            cloth: 7,
+            gold: 100
+        };
+
+        function updateTooltipCount() {
+            const count = document.querySelectorAll('.inventory-tooltip').length;
+            const element = document.getElementById('tooltipCount');
+            element.textContent = count;
+            element.className = count > 1 ? 'value warning' : 'value';
+            
+            if (count > 1) {
+                addResult('fail', `检测到 tooltip 堆叠！当前数量: ${count}`);
+            }
+        }
+
+        function testOpenInventory() {
+            addResult('info', '正在打开背包...');
+            
+            if (inventoryManager && inventoryManager.isModalOpen()) {
+                inventoryManager.close();
+            }
+
+            inventoryManager = new SimpleInventory();
+            
+            inventoryManager.setOnCloseCallback((updatedInventory) => {
+                addResult('info', '背包已关闭');
+            });
+            
+            inventoryManager.setOnItemUseCallback((itemType, itemCount) => {
+                const item = getItemConfig(itemType) || { name: itemType };
+                addResult('info', `使用了 ${item.name} x${itemCount}`);
+            });
+            
+            inventoryManager.open(testInventoryData);
+            addResult('pass', '背包窗口已成功打开');
+            
+            startTooltipMonitoring();
+        }
+
+        function testFastSwitch() {
+            addResult('info', '模拟快速切换物品测试...');
+            testOpenInventory();
+            
+            setTimeout(() => {
+                simulateFastSwitch();
+            }, 500);
+        }
+
+        function simulateFastSwitch() {
+            const items = document.querySelectorAll('.inventory-item');
+            if (items.length < 2) {
+                addResult('info', '物品数量不足，无法进行快速切换测试');
+                return;
+            }
+
+            let index = 0;
+            const maxSwitches = 10;
+            const switchInterval = setInterval(() => {
+                if (index >= maxSwitches) {
+                    clearInterval(switchInterval);
+                    setTimeout(() => {
+                        const count = document.querySelectorAll('.inventory-tooltip').length;
+                        if (count <= 1) {
+                            addResult('pass', `快速切换测试完成，最终 tooltip 数量: ${count}`);
+                        } else {
+                            addResult('fail', `快速切换测试失败，tooltip 堆叠: ${count}`);
+                        }
+                    }, 300);
+                    return;
+                }
+
+                const item = items[index % items.length];
+                const event = new MouseEvent('mouseover', { bubbles: true });
+                item.dispatchEvent(event);
+                
+                addResult('info', `切换到物品 ${index + 1}/${maxSwitches}`);
+                index++;
+            }, 50);
+        }
+
+        function startTooltipMonitoring() {
+            if (tooltipInterval) {
+                clearInterval(tooltipInterval);
+            }
+            
+            tooltipInterval = setInterval(() => {
+                updateTooltipCount();
+            }, 100);
+        }
+
+        function stopTooltipMonitoring() {
+            if (tooltipInterval) {
+                clearInterval(tooltipInterval);
+                tooltipInterval = null;
+            }
+        }
+
+        function getItemConfig(itemType) {
+            return {
+                name: InventoryItems.getItemName(itemType),
+                icon: InventoryItems.getItemIcon(itemType)
+            };
+        }
+
+        function addResult(type, message) {
+            const container = document.getElementById('testResults');
+            const item = document.createElement('div');
+            item.className = `test-result-item ${type}`;
+            
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+            
+            item.innerHTML = `
+                <span class="time">[${timeStr}]</span>
+                <span class="message">${message}</span>
+            `;
+            container.appendChild(item);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearResults() {
+            const container = document.getElementById('testResults');
+            container.innerHTML = '';
+            addResult('info', '日志已清空');
+        }
+
+        updateTooltipCount();
+        addResult('info', '测试页面已加载');
+        addResult('info', '点击「打开背包测试」开始测试');
+        addResult('info', '测试会实时监控 tooltip 数量，超过 1 个会触发警告');
+    </script>
+</body>
+</html>
