@@ -12,7 +12,9 @@ class RenderEngine {
             targetX: 0,
             targetY: 0,
             targetZoom: 1,
-            smoothing: 0.1
+            smoothing: 0.15,
+            minZoom: 0.25,
+            maxZoom: 3
         };
 
         this.layers = new Map();
@@ -22,6 +24,20 @@ class RenderEngine {
         
         this.isPaused = false;
         this.lastRenderTime = 0;
+        this.frameCount = 0;
+        this.fps = 0;
+        this.lastFpsUpdate = 0;
+        
+        this.textureCache = new Map();
+        this.renderStats = {
+            framesRendered: 0,
+            itemsRendered: 0,
+            particlesRendered: 0,
+            totalDrawCalls: 0
+        };
+        
+        this.debugMode = false;
+        this.showGrid = false;
         
         this.initLayers();
     }
@@ -41,7 +57,10 @@ class RenderEngine {
             zIndex: options.zIndex || this.renderOrder.length,
             items: [],
             visible: options.visible !== undefined ? options.visible : true,
-            clear: options.clear !== undefined ? options.clear : false
+            clear: options.clear !== undefined ? options.clear : false,
+            useBatchRendering: options.useBatchRendering || false,
+            batchCanvas: null,
+            batchDirty: true
         };
         
         this.layers.set(name, layer);
@@ -49,6 +68,12 @@ class RenderEngine {
         this.renderOrder.sort((a, b) => 
             this.layers.get(a).zIndex - this.layers.get(b).zIndex
         );
+        
+        if (layer.useBatchRendering) {
+            layer.batchCanvas = document.createElement('canvas');
+            layer.batchCanvas.width = this.width;
+            layer.batchCanvas.height = this.height;
+        }
     }
 
     removeLayer(name) {
@@ -60,13 +85,20 @@ class RenderEngine {
         const layer = this.layers.get(name);
         if (layer) {
             layer.visible = visible;
+            if (layer.useBatchRendering) {
+                layer.batchDirty = true;
+            }
         }
     }
 
     addToLayer(layerName, item) {
         const layer = this.layers.get(layerName);
         if (layer) {
+            if (!item.visible) item.visible = true;
             layer.items.push(item);
+            if (layer.useBatchRendering) {
+                layer.batchDirty = true;
+            }
         }
     }
 
@@ -74,6 +106,9 @@ class RenderEngine {
         const layer = this.layers.get(layerName);
         if (layer) {
             layer.items = layer.items.filter(item => item.id !== itemId);
+            if (layer.useBatchRendering) {
+                layer.batchDirty = true;
+            }
         }
     }
 
@@ -81,6 +116,9 @@ class RenderEngine {
         const layer = this.layers.get(layerName);
         if (layer) {
             layer.items = [];
+            if (layer.useBatchRendering) {
+                layer.batchDirty = true;
+            }
         }
     }
 
@@ -88,6 +126,8 @@ class RenderEngine {
         if (instant) {
             this.camera.x = x;
             this.camera.y = y;
+            this.camera.targetX = x;
+            this.camera.targetY = y;
         } else {
             this.camera.targetX = x;
             this.camera.targetY = y;
@@ -95,10 +135,12 @@ class RenderEngine {
     }
 
     setCameraZoom(zoom, instant = false) {
+        const clampedZoom = Math.max(this.camera.minZoom, Math.min(this.camera.maxZoom, zoom));
         if (instant) {
-            this.camera.zoom = Math.max(0.1, Math.min(5, zoom));
+            this.camera.zoom = clampedZoom;
+            this.camera.targetZoom = clampedZoom;
         } else {
-            this.camera.targetZoom = Math.max(0.1, Math.min(5, zoom));
+            this.camera.targetZoom = clampedZoom;
         }
     }
 
@@ -116,8 +158,21 @@ class RenderEngine {
         };
     }
 
+    isInView(item) {
+        if (item.x === undefined || item.y === undefined) return true;
+        
+        const screenPos = this.worldToScreen(item.x, item.y);
+        const margin = 100;
+        
+        return screenPos.x > -margin && 
+               screenPos.x < this.width + margin && 
+               screenPos.y > -margin && 
+               screenPos.y < this.height + margin;
+    }
+
     start() {
         this.lastRenderTime = performance.now();
+        this.lastFpsUpdate = this.lastRenderTime;
         this.renderLoop();
     }
 
@@ -132,14 +187,23 @@ class RenderEngine {
     resume() {
         this.isPaused = false;
         this.lastRenderTime = performance.now();
+        this.lastFpsUpdate = this.lastRenderTime;
     }
 
     renderLoop() {
+        const currentTime = performance.now();
+        
         if (!this.isPaused) {
-            const currentTime = performance.now();
             const deltaTime = (currentTime - this.lastRenderTime) / 1000;
             this.lastRenderTime = currentTime;
-
+            
+            this.frameCount++;
+            if (currentTime - this.lastFpsUpdate >= 1000) {
+                this.fps = this.frameCount;
+                this.frameCount = 0;
+                this.lastFpsUpdate = currentTime;
+            }
+            
             this.update(deltaTime);
             this.render();
         }
@@ -178,6 +242,9 @@ class RenderEngine {
         this.ctx.scale(this.camera.zoom, this.camera.zoom);
         this.ctx.translate(-this.camera.x, -this.camera.y);
 
+        this.renderStats.itemsRendered = 0;
+        this.renderStats.particlesRendered = 0;
+
         for (const layerName of this.renderOrder) {
             const layer = this.layers.get(layerName);
             if (!layer || !layer.visible) continue;
@@ -186,20 +253,69 @@ class RenderEngine {
                 this.ctx.clearRect(-this.width, -this.height, this.width * 2, this.height * 2);
             }
 
-            for (const item of layer.items) {
-                this.renderItem(item);
+            if (layer.useBatchRendering) {
+                this.renderBatchLayer(layer);
+            } else {
+                this.renderLayer(layer);
             }
         }
 
         this.renderParticles();
 
+        if (this.showGrid) {
+            this.drawDebugGrid();
+        }
+
         this.ctx.restore();
 
         this.renderUI();
+        
+        if (this.debugMode) {
+            this.renderDebugInfo();
+        }
+        
+        this.renderStats.framesRendered++;
+    }
+
+    renderLayer(layer) {
+        for (const item of layer.items) {
+            if (!item.visible) continue;
+            if (!this.isInView(item)) continue;
+            
+            this.renderItem(item);
+            this.renderStats.itemsRendered++;
+        }
+    }
+
+    renderBatchLayer(layer) {
+        if (!layer.batchCanvas) return;
+        
+        if (layer.batchDirty) {
+            const batchCtx = layer.batchCanvas.getContext('2d');
+            batchCtx.clearRect(0, 0, layer.batchCanvas.width, layer.batchCanvas.height);
+            
+            batchCtx.save();
+            batchCtx.translate(layer.batchCanvas.width / 2, layer.batchCanvas.height / 2);
+            batchCtx.scale(this.camera.zoom, this.camera.zoom);
+            batchCtx.translate(-this.camera.x, -this.camera.y);
+            
+            for (const item of layer.items) {
+                if (!item.visible) continue;
+                if (!this.isInView(item)) continue;
+                
+                this.renderItemToContext(batchCtx, item);
+                this.renderStats.itemsRendered++;
+            }
+            
+            batchCtx.restore();
+            layer.batchDirty = false;
+        }
+        
+        this.ctx.drawImage(layer.batchCanvas, -this.width / 2, -this.height / 2);
     }
 
     clear() {
-        this.ctx.fillStyle = '#1a1a2e';
+        this.ctx.fillStyle = '#0f0f1a';
         this.ctx.fillRect(0, 0, this.width, this.height);
     }
 
@@ -239,6 +355,26 @@ class RenderEngine {
         this.ctx.restore();
     }
 
+    renderItemToContext(ctx, item) {
+        if (!item.visible) return;
+
+        ctx.save();
+
+        if (item.x !== undefined && item.y !== undefined) {
+            ctx.translate(item.x, item.y);
+        }
+
+        if (item.draw) {
+            item.draw(ctx);
+        } else if (item.type === 'rect') {
+            this.renderRectToContext(ctx, item);
+        } else if (item.type === 'circle') {
+            this.renderCircleToContext(ctx, item);
+        }
+
+        ctx.restore();
+    }
+
     renderRect(item) {
         if (item.fill) {
             this.ctx.fillStyle = item.fill;
@@ -248,6 +384,18 @@ class RenderEngine {
             this.ctx.strokeStyle = item.stroke;
             this.ctx.lineWidth = item.lineWidth || 1;
             this.ctx.strokeRect(item.width / -2, item.height / -2, item.width, item.height);
+        }
+    }
+
+    renderRectToContext(ctx, item) {
+        if (item.fill) {
+            ctx.fillStyle = item.fill;
+            ctx.fillRect(item.width / -2, item.height / -2, item.width, item.height);
+        }
+        if (item.stroke) {
+            ctx.strokeStyle = item.stroke;
+            ctx.lineWidth = item.lineWidth || 1;
+            ctx.strokeRect(item.width / -2, item.height / -2, item.width, item.height);
         }
     }
 
@@ -262,6 +410,20 @@ class RenderEngine {
             this.ctx.strokeStyle = item.stroke;
             this.ctx.lineWidth = item.lineWidth || 1;
             this.ctx.stroke();
+        }
+    }
+
+    renderCircleToContext(ctx, item) {
+        ctx.beginPath();
+        ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+        if (item.fill) {
+            ctx.fillStyle = item.fill;
+            ctx.fill();
+        }
+        if (item.stroke) {
+            ctx.strokeStyle = item.stroke;
+            ctx.lineWidth = item.lineWidth || 1;
+            ctx.stroke();
         }
     }
 
@@ -281,10 +443,37 @@ class RenderEngine {
     }
 
     renderSprite(item) {
-        if (item.image) {
+        if (!item.image) {
+            console.warn('Sprite item has no image:', item);
+            return;
+        }
+        
+        try {
             const w = item.width || item.image.width;
             const h = item.height || item.image.height;
-            this.ctx.drawImage(item.image, w / -2, h / -2, w, h);
+            
+            if (w === 0 || h === 0) {
+                console.warn('Sprite has zero dimensions:', item);
+                return;
+            }
+            
+            if (item.sourceRect) {
+                this.ctx.drawImage(
+                    item.image,
+                    item.sourceRect.x,
+                    item.sourceRect.y,
+                    item.sourceRect.width,
+                    item.sourceRect.height,
+                    w / -2,
+                    h / -2,
+                    w,
+                    h
+                );
+            } else {
+                this.ctx.drawImage(item.image, w / -2, h / -2, w, h);
+            }
+        } catch (error) {
+            console.error('Error rendering sprite:', error, item);
         }
     }
 
@@ -300,6 +489,7 @@ class RenderEngine {
             this.ctx.fill();
             
             this.ctx.restore();
+            this.renderStats.particlesRendered++;
         }
     }
 
@@ -336,6 +526,25 @@ class RenderEngine {
         this.ctx.restore();
     }
 
+    renderDebugInfo() {
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(10, 10, 200, 120);
+        
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = '12px monospace';
+        
+        let y = 30;
+        this.ctx.fillText(`FPS: ${this.fps}`, 20, y); y += 16;
+        this.ctx.fillText(`Camera: (${Math.floor(this.camera.x)}, ${Math.floor(this.camera.y)})`, 20, y); y += 16;
+        this.ctx.fillText(`Zoom: ${this.camera.zoom.toFixed(2)}`, 20, y); y += 16;
+        this.ctx.fillText(`Items: ${this.renderStats.itemsRendered}`, 20, y); y += 16;
+        this.ctx.fillText(`Particles: ${this.renderStats.particlesRendered}`, 20, y); y += 16;
+        this.ctx.fillText(`Frames: ${this.renderStats.framesRendered}`, 20, y);
+        
+        this.ctx.restore();
+    }
+
     addParticle(x, y, options = {}) {
         this.particles.push({
             x,
@@ -364,6 +573,14 @@ class RenderEngine {
         this.height = height;
         this.canvas.width = width;
         this.canvas.height = height;
+        
+        for (const layer of this.layers.values()) {
+            if (layer.batchCanvas) {
+                layer.batchCanvas.width = width;
+                layer.batchCanvas.height = height;
+                layer.batchDirty = true;
+            }
+        }
     }
 
     drawDebugGrid(cellSize = 40) {
@@ -373,19 +590,59 @@ class RenderEngine {
         const startX = Math.floor(this.camera.x / cellSize) * cellSize - this.camera.x;
         const startY = Math.floor(this.camera.y / cellSize) * cellSize - this.camera.y;
 
-        for (let x = startX; x < this.width / this.camera.zoom; x += cellSize) {
+        for (let x = startX; x < this.width / this.camera.zoom + cellSize; x += cellSize) {
             this.ctx.beginPath();
             this.ctx.moveTo(x, -this.height);
             this.ctx.lineTo(x, this.height);
             this.ctx.stroke();
         }
 
-        for (let y = startY; y < this.height / this.camera.zoom; y += cellSize) {
+        for (let y = startY; y < this.height / this.camera.zoom + cellSize; y += cellSize) {
             this.ctx.beginPath();
             this.ctx.moveTo(-this.width, y);
             this.ctx.lineTo(this.width, y);
             this.ctx.stroke();
         }
+        
+        this.ctx.strokeStyle = 'rgba(255, 100, 100, 0.3)';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(0, -this.height);
+        this.ctx.lineTo(0, this.height);
+        this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.moveTo(-this.width, 0);
+        this.ctx.lineTo(this.width, 0);
+        this.ctx.stroke();
+    }
+
+    toggleDebug() {
+        this.debugMode = !this.debugMode;
+        return this.debugMode;
+    }
+
+    toggleGrid() {
+        this.showGrid = !this.showGrid;
+        return this.showGrid;
+    }
+
+    getStats() {
+        return {
+            fps: this.fps,
+            camera: { ...this.camera },
+            layers: Array.from(this.layers.keys()),
+            renderStats: { ...this.renderStats },
+            particleCount: this.particles.length,
+            animationCount: this.animations.length
+        };
+    }
+
+    preloadTexture(image, key) {
+        this.textureCache.set(key, image);
+    }
+
+    getCachedTexture(key) {
+        return this.textureCache.get(key);
     }
 }
 

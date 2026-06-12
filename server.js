@@ -71,7 +71,7 @@ const server = http.createServer((req, res) => {
     });
 });
 
-const PORT = 8084;
+const PORT = 8085;
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}/`);
     console.log(`Assets directory accessible at http://localhost:${PORT}/assets/`);

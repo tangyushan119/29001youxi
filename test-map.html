@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地图加载测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #1a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            flex: 1;
+            display: block;
+            background: #0f0f1a;
+        }
+        
+        #debugPanel {
+            width: 300px;
+            background: rgba(20, 20, 30, 0.95);
+            border-left: 1px solid #333;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .panel-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .panel-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .panel-section h3 {
+            color: #4a9eff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 12px;
+            color: #b8c5d6;
+        }
+        
+        .stat-label {
+            color: #8892a6;
+        }
+        
+        .stat-value {
+            color: #fff;
+            font-weight: bold;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-success {
+            background: #2ecc71;
+            box-shadow: 0 0 10px #2ecc71;
+        }
+        
+        .status-warning {
+            background: #f39c12;
+            box-shadow: 0 0 10px #f39c12;
+        }
+        
+        .status-error {
+            background: #e74c3c;
+            box-shadow: 0 0 10px #e74c3c;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(145deg, #4a9eff, #3a7bd5);
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(145deg, #3a7bd5, #2a6bc5);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: #fff;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(145deg, #c0392b, #a0291b);
+        }
+        
+        .btn-secondary {
+            background: #333;
+            color: #fff;
+        }
+        
+        .btn-secondary:hover {
+            background: #444;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a9eff, #2ecc71);
+            transition: width 0.3s;
+        }
+        
+        .log-container {
+            background: #111;
+            border-radius: 5px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        
+        .log-item {
+            margin: 2px 0;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .log-info {
+            color: #4a9eff;
+        }
+        
+        .log-success {
+            color: #2ecc71;
+            background: rgba(46, 204, 113, 0.1);
+        }
+        
+        .log-warning {
+            color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+        
+        .log-error {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        .terrain-preview {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+        
+        .terrain-chip {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .terrain-chip:hover {
+            transform: scale(1.1);
+        }
+        
+        .terrain-chip span {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="debugPanel">
+            <div class="panel-section">
+                <h3>测试状态</h3>
+                <div class="stat-item">
+                    <span class="stat-label"><span class="status-dot" id="statusResource"></span>资源加载</span>
+                    <span class="stat-value" id="resourceStatus">未开始</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label"><span class="status-dot" id="statusTerrain"></span>地形生成</span>
+                    <span class="stat-value" id="terrainStatus">未开始</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label"><span class="status-dot" id="statusRender"></span>渲染引擎</span>
+                    <span class="stat-value" id="renderStatus">未开始</span>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>性能统计</h3>
+                <div class="stat-item">
+                    <span class="stat-label">FPS</span>
+                    <span class="stat-value" id="fps">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">图块数量</span>
+                    <span class="stat-value" id="tileCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">渲染项</span>
+                    <span class="stat-value" id="renderItems">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">相机位置</span>
+                    <span class="stat-value" id="cameraPos">(0, 0)</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">缩放</span>
+                    <span class="stat-value" id="cameraZoom">1.0x</span>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>操作按钮</h3>
+                <button class="btn btn-primary" onclick="reloadMap()">重新加载地图</button>
+                <button class="btn btn-secondary" onclick="toggleDebug()">切换调试模式</button>
+                <button class="btn btn-secondary" onclick="toggleGrid()">切换网格显示</button>
+                <button class="btn btn-danger" onclick="clearCache()">清除缓存</button>
+            </div>
+            
+            <div class="panel-section">
+                <h3>地貌预览</h3>
+                <div class="terrain-preview" id="terrainPreview"></div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>加载日志</h3>
+                <div class="log-container" id="logContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GameEngine } from './src/game/GameEngine.js';
+        import { GameScene } from './src/game/Scene.js';
+        
+        let engine = null;
+        let gameScene = null;
+        let statsInterval = null;
+        
+        function log(message, type = 'info') {
+            const container = document.getElementById('logContainer');
+            const item = document.createElement('div');
+            item.className = `log-item log-${type}`;
+            item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            container.appendChild(item);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function setStatus(elementId, status, type) {
+            const dot = document.getElementById(`${elementId}Status`);
+            const text = document.getElementById(elementId);
+            const statusDot = document.getElementById(`status${elementId.charAt(0).toUpperCase() + elementId.slice(1)}`);
+            
+            text.textContent = status;
+            statusDot.className = `status-dot status-${type}`;
+        }
+        
+        async function initMapTest() {
+            log('开始初始化地图测试...', 'info');
+            
+            try {
+                setStatus('resource', '加载中...', 'warning');
+                log('初始化渲染引擎...', 'info');
+                
+                engine = new GameEngine({
+                    canvasId: 'gameCanvas',
+                    debug: false
+                });
+                
+                await engine.initializationPromise;
+                setStatus('render', '完成', 'success');
+                log('渲染引擎初始化完成', 'success');
+                
+                log('加载游戏资源...', 'info');
+                const stats = await engine.resourceManager.loadAllResources();
+                setStatus('resource', `完成 (${stats.loadedTextures}/${stats.totalTextures})`, 'success');
+                log(`资源加载完成: ${stats.loadedTextures}/${stats.totalTextures} 纹理`, 'success');
+                
+                log('创建游戏场景...', 'info');
+                gameScene = new GameScene('test');
+                gameScene.init(engine);
+                engine.addScene('test', gameScene);
+                
+                setStatus('terrain', '生成中...', 'warning');
+                log('生成地形...', 'info');
+                
+                engine.setScene('test');
+                engine.start();
+                
+                setStatus('terrain', '完成', 'success');
+                log('地形生成完成', 'success');
+                
+                log('地图测试初始化完成！', 'success');
+                
+                updateTerrainPreview();
+                startStatsUpdate();
+                
+            } catch (error) {
+                log(`初始化失败: ${error.message}`, 'error');
+                setStatus('resource', '失败', 'error');
+                setStatus('terrain', '失败', 'error');
+                setStatus('render', '失败', 'error');
+                console.error('Map test initialization failed:', error);
+            }
+        }
+        
+        function updateTerrainPreview() {
+            const terrainColors = {
+                grass: '#2d5a27',
+                forest: '#1e4d2b',
+                water: '#1e3a5f',
+                deep_water: '#0a192f',
+                beach: '#f4d03f',
+                mountain: '#6b7b8a',
+                peak: '#a0a0a0',
+                snow: '#e8f4f8',
+                desert: '#f4a460',
+                savanna: '#daa520',
+                tropical_forest: '#0d4f3c',
+                grassland: '#4a7c3a',
+                river: '#3d7cb5',
+                lake: '#2d6a9a',
+                tundra: '#b8c5d6',
+                snow_peak: '#ffffff'
+            };
+            
+            const preview = document.getElementById('terrainPreview');
+            preview.innerHTML = '';
+            
+            for (const [name, color] of Object.entries(terrainColors)) {
+                const chip = document.createElement('div');
+                chip.className = 'terrain-chip';
+                chip.style.background = color;
+                chip.title = name;
+                chip.innerHTML = `<span>${name.slice(0, 3)}</span>`;
+                preview.appendChild(chip);
+            }
+        }
+        
+        function startStatsUpdate() {
+            if (statsInterval) clearInterval(statsInterval);
+            
+            statsInterval = setInterval(() => {
+                if (!engine || !engine.renderEngine) return;
+                
+                const stats = engine.renderEngine.getStats();
+                
+                document.getElementById('fps').textContent = stats.fps;
+                document.getElementById('cameraPos').textContent = 
+                    `(${Math.floor(stats.camera.x)}, ${Math.floor(stats.camera.y)})`;
+                document.getElementById('cameraZoom').textContent = 
+                    `${stats.camera.zoom.toFixed(2)}x`;
+                document.getElementById('renderItems').textContent = 
+                    stats.renderStats.itemsRendered;
+                
+                if (gameScene && gameScene.terrainTiles) {
+                    document.getElementById('tileCount').textContent = 
+                        gameScene.terrainTiles.length;
+                }
+            }, 100);
+        }
+        
+        function reloadMap() {
+            log('重新加载地图...', 'info');
+            
+            if (engine) {
+                engine.stop();
+                engine = null;
+            }
+            
+            if (statsInterval) {
+                clearInterval(statsInterval);
+                statsInterval = null;
+            }
+            
+            initMapTest();
+        }
+        
+        function toggleDebug() {
+            if (engine?.renderEngine) {
+                const enabled = engine.renderEngine.toggleDebug();
+                log(enabled ? '调试模式已开启' : '调试模式已关闭', 'info');
+            }
+        }
+        
+        function toggleGrid() {
+            if (engine?.renderEngine) {
+                const enabled = engine.renderEngine.toggleGrid();
+                log(enabled ? '网格显示已开启' : '网格显示已关闭', 'info');
+            }
+        }
+        
+        function clearCache() {
+            if (engine?.sceneCache) {
+                engine.sceneCache.clear();
+                log('缓存已清除', 'warning');
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            initMapTest();
+            
+            window.addEventListener('resize', () => {
+                if (engine) {
+                    engine.handleResize();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

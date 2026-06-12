@@ -153,6 +153,8 @@ class GameScene extends Scene {
         this.terrainGenerator = null;
         this.terrainTiles = [];
         this.layeredElements = [];
+        this.terrainColors = {};
+        this.renderFrame = 0;
     }
 
     load() {
@@ -199,7 +201,9 @@ class GameScene extends Scene {
                 }
                 
                 this.terrainGenerator = new TerrainGenerator(width, height, seed);
+                this.terrainGenerator.setTerrainConfig(terrainConfig);
                 this.terrainTiles = this.terrainGenerator.generateTerrain();
+                this.terrainColors = this.terrainGenerator.getTerrainColors();
                 
                 this.world = {
                     width: width,
@@ -215,6 +219,9 @@ class GameScene extends Scene {
             
             this.createTerrainRenderItems();
             this.createLayeredElements();
+            
+            console.log(`World setup complete: ${this.world.tiles?.length || 0} tiles, ${this.layeredElements.length} elements`);
+            
         } catch (error) {
             console.error('Error setting up world:', error);
             throw error;
@@ -222,11 +229,19 @@ class GameScene extends Scene {
     }
 
     createTerrainRenderItems() {
-        if (!this.terrainTiles || !this.game?.renderEngine) return;
+        if (!this.terrainTiles || !this.game?.renderEngine) {
+            console.error('Cannot create terrain render items: terrainTiles or renderEngine not initialized');
+            return;
+        }
 
+        console.log(`Creating terrain render items for ${this.terrainTiles.length} tiles`);
+        
         const sceneRef = this;
+        const colors = this.terrainColors;
         
         for (const tile of this.terrainTiles) {
+            const color = colors[tile.terrainType] || '#888888';
+            
             const renderItem = {
                 id: tile.id,
                 x: tile.x + tile.width / 2,
@@ -236,23 +251,290 @@ class GameScene extends Scene {
                 terrainType: tile.terrainType,
                 heightValue: tile.heightValue,
                 layer: 'terrain',
+                visible: true,
                 draw: function(ctx) {
-                    sceneRef.drawTerrainTile(ctx, tile);
+                    sceneRef.drawTerrainTile(ctx, tile, color);
                 }
             };
             
             this.addRenderItem(renderItem);
         }
+        
+        console.log('Terrain render items created');
+    }
+
+    drawTerrainTile(ctx, tile, baseColor) {
+        const x = tile.x;
+        const y = tile.y;
+        const w = tile.width;
+        const h = tile.height;
+        
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(x, y, w, h);
+        
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(x, y, w, h);
+        
+        this.drawTerrainPattern(ctx, tile, baseColor);
+    }
+
+    drawTerrainPattern(ctx, tile, baseColor) {
+        const x = tile.x;
+        const y = tile.y;
+        const w = tile.width;
+        const h = tile.height;
+        
+        switch(tile.terrainType) {
+            case 'grass':
+                this.drawGrassPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'forest':
+                this.drawForestPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'water':
+            case 'river':
+            case 'lake':
+                this.drawWaterPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'deep_water':
+                this.drawDeepWaterPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'beach':
+                this.drawBeachPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'mountain':
+                this.drawMountainPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'peak':
+                this.drawPeakPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'snow':
+            case 'snow_peak':
+                this.drawSnowPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'tundra':
+                this.drawTundraPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'desert':
+                this.drawDesertPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'savanna':
+                this.drawSavannaPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'tropical_forest':
+                this.drawTropicalForestPattern(ctx, x, y, w, h);
+                break;
+                
+            case 'grassland':
+                this.drawGrasslandPattern(ctx, x, y, w, h);
+                break;
+        }
+    }
+
+    drawGrassPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#3d7a3d';
+        for (let i = 0; i < 8; i++) {
+            const gx = x + (i % 4) * 10 + 2;
+            const gy = y + Math.floor(i / 4) * 20 + 15;
+            ctx.beginPath();
+            ctx.moveTo(gx, gy + 10);
+            ctx.quadraticCurveTo(gx + 2, gy, gx, gy - 5);
+            ctx.quadraticCurveTo(gx - 2, gy, gx, gy + 10);
+            ctx.fill();
+        }
+    }
+
+    drawForestPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#1a3a1a';
+        for (let i = 0; i < 4; i++) {
+            const tx = x + (i % 2) * 20 + 10;
+            const ty = y + Math.floor(i / 2) * 20 + 10;
+            ctx.fillStyle = '#2d5a27';
+            ctx.beginPath();
+            ctx.moveTo(tx, ty + 20);
+            ctx.lineTo(tx + 8, ty);
+            ctx.lineTo(tx - 8, ty);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#5d4037';
+            ctx.fillRect(tx - 2, ty + 15, 4, 8);
+        }
+    }
+
+    drawWaterPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        const time = Date.now() * 0.002;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(x + 10 + i * 15, y + 20 + Math.sin(time + i) * 5, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    drawDeepWaterPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = 'rgba(100, 150, 200, 0.2)';
+        const time = Date.now() * 0.0015;
+        for (let i = 0; i < 4; i++) {
+            const waveX = x + 5 + i * 10 + Math.sin(time + i) * 3;
+            const waveY = y + h / 2 + Math.cos(time * 0.7 + i) * 8;
+            ctx.beginPath();
+            ctx.ellipse(waveX, waveY, 8, 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    drawBeachPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#d4a574';
+        for (let i = 0; i < 12; i++) {
+            const sx = x + (i % 4) * 10 + 5;
+            const sy = y + Math.floor(i / 4) * 15 + 5;
+            ctx.beginPath();
+            ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    drawMountainPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#5a6a7a';
+        for (let i = 0; i < 5; i++) {
+            const mx = x + Math.random() * w;
+            const my = y + Math.random() * h;
+            ctx.beginPath();
+            ctx.moveTo(mx, my + 5);
+            ctx.lineTo(mx + 3, my);
+            ctx.lineTo(mx - 3, my);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    drawPeakPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.6;
+        for (let i = 0; i < 6; i++) {
+            const px = x + Math.random() * w;
+            const py = y + Math.random() * h;
+            ctx.beginPath();
+            ctx.arc(px, py, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    drawSnowPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.5;
+        const time = Date.now() * 0.002;
+        for (let i = 0; i < 8; i++) {
+            const sx = x + ((i * 7 + Math.sin(time + i)) % w);
+            const sy = y + ((i * 11 + Math.cos(time + i * 0.5)) % h);
+            ctx.beginPath();
+            ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    drawTundraPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#c8d5e0';
+        for (let i = 0; i < 4; i++) {
+            const tx = x + (i % 2) * 20 + 10;
+            const ty = y + Math.floor(i / 2) * 20 + 10;
+            ctx.beginPath();
+            ctx.arc(tx, ty, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    drawDesertPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#e0c080';
+        for (let i = 0; i < 6; i++) {
+            const dx = x + (i % 3) * 13 + 4;
+            const dy = y + Math.floor(i / 3) * 15 + 7;
+            ctx.beginPath();
+            ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        if (Math.random() < 0.3) {
+            ctx.fillStyle = '#c0a060';
+            ctx.beginPath();
+            ctx.moveTo(x + w / 2, y + 5);
+            ctx.lineTo(x + w / 2 + 8, y + h - 5);
+            ctx.lineTo(x + w / 2 - 8, y + h - 5);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    drawSavannaPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#c9a83b';
+        for (let i = 0; i < 5; i++) {
+            const gx = x + (i % 5) * 8 + 4;
+            const gy = y + 25 + (i % 2) * 10;
+            ctx.beginPath();
+            ctx.moveTo(gx, gy + 8);
+            ctx.quadraticCurveTo(gx + 1, gy, gx, gy - 4);
+            ctx.quadraticCurveTo(gx - 1, gy, gx, gy + 8);
+            ctx.fill();
+        }
+    }
+
+    drawTropicalForestPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#0a6030';
+        for (let i = 0; i < 3; i++) {
+            const tx = x + (i % 3) * 14 + 7;
+            const ty = y + Math.floor(i / 3) * 20 + 10;
+            
+            ctx.fillStyle = '#1a8040';
+            ctx.beginPath();
+            ctx.arc(tx, ty - 5, 10, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#8b4513';
+            ctx.fillRect(tx - 2, ty + 5, 4, 10);
+        }
+    }
+
+    drawGrasslandPattern(ctx, x, y, w, h) {
+        ctx.fillStyle = '#5a9a4a';
+        for (let i = 0; i < 10; i++) {
+            const gx = x + (i % 5) * 8 + 4;
+            const gy = y + Math.floor(i / 5) * 20 + 12;
+            ctx.beginPath();
+            ctx.moveTo(gx, gy + 8);
+            ctx.quadraticCurveTo(gx + 1.5, gy + 2, gx, gy - 3);
+            ctx.quadraticCurveTo(gx - 1.5, gy + 2, gx, gy + 8);
+            ctx.fill();
+        }
     }
 
     createLayeredElements() {
         this.layeredElements = [];
-        
-        for (let i = 0; i < 15; i++) {
+        const config = this.game?.resourceManager?.getTerrainConfig();
+        const treeCount = config?.layeredElements?.trees?.count || 15;
+        const rockCount = config?.layeredElements?.rocks?.count || 8;
+        const bushCount = config?.layeredElements?.bushes?.count || 20;
+        const flowerCount = config?.layeredElements?.flowers?.count || 3;
+
+        for (let i = 0; i < treeCount; i++) {
             const tree = {
                 id: `tree_${i}`,
-                x: Math.random() * 1800 + 100,
-                y: Math.random() * 1800 + 100,
+                x: Math.random() * (this.world.width - 100) + 50,
+                y: Math.random() * (this.world.height - 100) + 50,
                 type: 'tree',
                 layer: 'objects',
                 size: 30 + Math.random() * 15,
@@ -262,12 +544,12 @@ class GameScene extends Scene {
             this.layeredElements.push(tree);
             this.createTreeRenderItem(tree);
         }
-        
-        for (let i = 0; i < 8; i++) {
+
+        for (let i = 0; i < rockCount; i++) {
             const rock = {
                 id: `rock_${i}`,
-                x: Math.random() * 1800 + 100,
-                y: Math.random() * 1800 + 100,
+                x: Math.random() * (this.world.width - 100) + 50,
+                y: Math.random() * (this.world.height - 100) + 50,
                 type: 'rock',
                 layer: 'objects',
                 size: 15 + Math.random() * 10
@@ -275,12 +557,12 @@ class GameScene extends Scene {
             this.layeredElements.push(rock);
             this.createRockRenderItem(rock);
         }
-        
-        for (let i = 0; i < 20; i++) {
+
+        for (let i = 0; i < bushCount; i++) {
             const bush = {
                 id: `bush_${i}`,
-                x: Math.random() * 1800 + 100,
-                y: Math.random() * 1800 + 100,
+                x: Math.random() * (this.world.width - 100) + 50,
+                y: Math.random() * (this.world.height - 100) + 50,
                 type: 'bush',
                 layer: 'objects',
                 size: 10 + Math.random() * 8
@@ -288,15 +570,16 @@ class GameScene extends Scene {
             this.layeredElements.push(bush);
             this.createBushRenderItem(bush);
         }
-        
-        for (let i = 0; i < 3; i++) {
+
+        const flowerColors = config?.layeredElements?.flowers?.colors || ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6b9d'];
+        for (let i = 0; i < flowerCount; i++) {
             const flower = {
                 id: `flower_${i}`,
-                x: Math.random() * 1800 + 100,
-                y: Math.random() * 1800 + 100,
+                x: Math.random() * (this.world.width - 100) + 50,
+                y: Math.random() * (this.world.height - 100) + 50,
                 type: 'flower',
                 layer: 'objects',
-                color: ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6b9d'][i % 5]
+                color: flowerColors[i % flowerColors.length]
             };
             this.layeredElements.push(flower);
             this.createFlowerRenderItem(flower);
@@ -314,6 +597,7 @@ class GameScene extends Scene {
             sway: tree.sway,
             swaySpeed: tree.swaySpeed,
             layer: tree.layer,
+            visible: true,
             draw: function(ctx) {
                 sceneRef.drawTree(ctx, this.x, this.y, this.size, this.sway);
             }
@@ -330,6 +614,7 @@ class GameScene extends Scene {
             type: rock.type,
             size: rock.size,
             layer: rock.layer,
+            visible: true,
             draw: function(ctx) {
                 sceneRef.drawRock(ctx, this.x, this.y, this.size);
             }
@@ -346,6 +631,7 @@ class GameScene extends Scene {
             type: bush.type,
             size: bush.size,
             layer: bush.layer,
+            visible: true,
             draw: function(ctx) {
                 sceneRef.drawBush(ctx, this.x, this.y, this.size);
             }
@@ -362,6 +648,7 @@ class GameScene extends Scene {
             type: flower.type,
             color: flower.color,
             layer: flower.layer,
+            visible: true,
             draw: function(ctx) {
                 sceneRef.drawFlower(ctx, this.x, this.y, this.color);
             }
@@ -484,6 +771,7 @@ class GameScene extends Scene {
             height: plot.height,
             plotData: plot,
             layer: 'structures',
+            visible: true,
             draw: function(ctx) {
                 sceneRef.drawPlot(ctx, this.plotData);
             }
@@ -534,6 +822,7 @@ class GameScene extends Scene {
             height: this.player.height,
             direction: this.player.direction,
             layer: 'player',
+            visible: true,
             draw: function(ctx) {
                 sceneRef.drawPlayer(ctx, this.x, this.y, this.width, this.height, this.direction);
             }
@@ -582,6 +871,7 @@ class GameScene extends Scene {
         this.updateHUD();
         this.checkGameOver();
         this.updateLayeredElements(deltaTime);
+        this.renderFrame++;
     }
 
     updateLayeredElements(deltaTime) {
@@ -663,114 +953,6 @@ class GameScene extends Scene {
     drawPlayer(ctx, x, y, width, height, direction) {
         if (!this.player) return;
         this.playerRenderer.draw(ctx, x, y, direction, this.player.isWalking, this.player.animationTime);
-    }
-
-    drawTerrainTile(ctx, tile) {
-        const colors = this.terrainGenerator?.getTerrainColors() || {
-            deep_water: '#1e3a5f',
-            water: '#2d5a87',
-            beach: '#f4d03f',
-            grass: '#2d5a27',
-            forest: '#1e4d2b',
-            mountain: '#6b7b8a',
-            peak: '#e8e8e8',
-            river: '#3d7cb5',
-            lake: '#2d6a9a'
-        };
-        
-        const color = colors[tile.terrainType] || colors.grass;
-        
-        ctx.fillStyle = color;
-        ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
-        
-        this.drawTerrainTexture(ctx, tile, color);
-    }
-
-    drawTerrainTexture(ctx, tile, baseColor) {
-        const x = tile.x;
-        const y = tile.y;
-        const w = tile.width;
-        const h = tile.height;
-        
-        switch(tile.terrainType) {
-            case 'grass':
-                ctx.fillStyle = '#3d7a3d';
-                for (let i = 0; i < 8; i++) {
-                    const gx = x + (i % 4) * 10 + 2;
-                    const gy = y + Math.floor(i / 4) * 20 + 15;
-                    ctx.beginPath();
-                    ctx.moveTo(gx, gy + 10);
-                    ctx.quadraticCurveTo(gx + 2, gy, gx, gy - 5);
-                    ctx.quadraticCurveTo(gx - 2, gy, gx, gy + 10);
-                    ctx.fill();
-                }
-                break;
-                
-            case 'forest':
-                ctx.fillStyle = '#1a3a1a';
-                for (let i = 0; i < 4; i++) {
-                    const tx = x + (i % 2) * 20 + 10;
-                    const ty = y + Math.floor(i / 2) * 20 + 10;
-                    ctx.fillStyle = '#2d5a27';
-                    ctx.beginPath();
-                    ctx.moveTo(tx, ty + 20);
-                    ctx.lineTo(tx + 8, ty);
-                    ctx.lineTo(tx - 8, ty);
-                    ctx.closePath();
-                    ctx.fill();
-                }
-                break;
-                
-            case 'water':
-            case 'river':
-            case 'lake':
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-                const time = Date.now() * 0.002;
-                for (let i = 0; i < 3; i++) {
-                    ctx.beginPath();
-                    ctx.arc(x + 10 + i * 15, y + 20 + Math.sin(time + i) * 5, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                break;
-                
-            case 'beach':
-                ctx.fillStyle = '#d4a574';
-                for (let i = 0; i < 12; i++) {
-                    const sx = x + Math.random() * w;
-                    const sy = y + Math.random() * h;
-                    ctx.beginPath();
-                    ctx.arc(sx, sy, 1, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                break;
-                
-            case 'mountain':
-                ctx.fillStyle = '#5a6a7a';
-                for (let i = 0; i < 5; i++) {
-                    const mx = x + Math.random() * w;
-                    const my = y + Math.random() * h;
-                    ctx.beginPath();
-                    ctx.moveTo(mx, my + 5);
-                    ctx.lineTo(mx + 3, my);
-                    ctx.lineTo(mx - 3, my);
-                    ctx.closePath();
-                    ctx.fill();
-                }
-                break;
-                
-            case 'peak':
-                ctx.fillStyle = '#ffffff';
-                ctx.globalAlpha = 0.6;
-                for (let i = 0; i < 6; i++) {
-                    const px = x + Math.random() * w;
-                    const py = y + Math.random() * h;
-                    ctx.beginPath();
-                    ctx.arc(px, py, 2, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.globalAlpha = 1;
-                break;
-        }
     }
 
     drawTree(ctx, x, y, size, sway) {
@@ -997,15 +1179,15 @@ class GameScene extends Scene {
                 
                 for (let i = -2; i <= 2; i++) {
                     ctx.beginPath();
-                    ctx.moveTo(x + i * 3, y);
-                    ctx.quadraticCurveTo(x + i * 3 + i, y - size, x + i * 3, y - size * 1.5);
+                    ctx.moveTo(i * 3, 0);
+                    ctx.quadraticCurveTo(i * 3 + i, -size, i * 3, -size * 1.5);
                     ctx.stroke();
                 }
                 
                 ctx.fillStyle = '#32CD32';
                 for (let i = -1; i <= 1; i++) {
                     ctx.beginPath();
-                    ctx.arc(x + i * 4, y - size, 2, 0, Math.PI * 2);
+                    ctx.arc(i * 4, -size, 2, 0, Math.PI * 2);
                     ctx.fill();
                 }
                 break;
