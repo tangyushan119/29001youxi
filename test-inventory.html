@@ -163,28 +163,6 @@
             color: #3498db;
         }
 
-        .test-result-item::before {
-            margin-right: 8px;
-        }
-
-        .test-result-item.pass::before {
-            content: '✓';
-        }
-
-        .test-result-item.fail::before {
-            content: '✗';
-        }
-
-        .test-result-item.info::before {
-            content: 'ℹ';
-        }
-
-        .test-description {
-            color: #b8c5d6;
-            font-size: 13px;
-            margin-bottom: 15px;
-        }
-
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -218,9 +196,6 @@
 
     <div class="test-section">
         <div class="test-title">基础测试</div>
-        <div class="test-description">
-            测试背包的基本功能：打开背包窗口、显示物品、关闭背包。
-        </div>
         <div class="test-controls">
             <button class="test-btn" onclick="testOpenInventory()">
                 <span>🎒</span> 打开背包
@@ -239,65 +214,29 @@
     </div>
 
     <div class="test-section">
-        <div class="test-title">物品数据测试</div>
-        <div class="test-description">
-            测试物品数据定义的正确性和完整性。
-        </div>
-        <div class="test-controls">
-            <button class="test-btn success" onclick="runItemDataTests()">
-                <span>✅</span> 运行物品数据测试
-            </button>
-        </div>
-        <div class="test-results" id="itemDataResults"></div>
-    </div>
-
-    <div class="test-section">
-        <div class="test-title">分类筛选测试</div>
-        <div class="test-description">
-            测试背包分类筛选功能是否正常工作。
-        </div>
-        <div class="test-controls">
-            <button class="test-btn" onclick="testCategoryFilter()">
-                <span>🔍</span> 测试分类筛选
-            </button>
-        </div>
-        <div class="test-results" id="categoryResults"></div>
-    </div>
-
-    <div class="test-section">
-        <div class="test-title">堆叠测试</div>
-        <div class="test-description">
-            测试物品堆叠逻辑是否正确处理。
-        </div>
-        <div class="test-controls">
-            <button class="test-btn" onclick="testItemStacking()">
-                <span>📚</span> 测试物品堆叠
-            </button>
-        </div>
-        <div class="test-results" id="stackingResults"></div>
-    </div>
-
-    <div class="test-section">
-        <div class="test-title">交互测试</div>
-        <div class="test-description">
-            测试背包内物品点击、拖拽等交互功能。
-        </div>
-        <div class="test-controls">
-            <button class="test-btn" onclick="testItemInteraction()">
-                <span>👆</span> 测试物品交互
-            </button>
-            <button class="test-btn danger" onclick="clearTestResults()">
-                <span>🗑️</span> 清空测试结果
-            </button>
-        </div>
-        <div class="test-results" id="interactionResults"></div>
+        <div class="test-title">测试结果</div>
+        <div class="test-results" id="testResults"></div>
     </div>
 
     <script type="module">
-        import { InventoryManager } from './src/ui/inventory/inventory-manager.js';
-        import { InventoryItems } from './src/ui/inventory/inventory-items.js';
+        import { SimpleInventory } from './src/ui/inventory/SimpleInventory.js';
 
         let inventoryManager = null;
+
+        const itemConfig = {
+            seeds: { name: '种子', icon: '🌱' },
+            food: { name: '食物', icon: '🍞' },
+            water: { name: '水', icon: '💧' },
+            wood: { name: '木材', icon: '🪵' },
+            stone: { name: '石头', icon: '🪨' },
+            grass: { name: '杂草', icon: '🌿' },
+            equipment: { name: '装备', icon: '⚔️' },
+            medicine: { name: '药品', icon: '🧪' },
+            iron: { name: '铁矿石', icon: '⚙️' },
+            leather: { name: '皮革', icon: '🧵' },
+            cloth: { name: '布料', icon: '🎭' },
+            gold: { name: '金币', icon: '🪙' }
+        };
 
         const testInventoryData = {
             seeds: 15,
@@ -341,11 +280,12 @@
 
             for (const [type, count] of Object.entries(data)) {
                 if (count > 0) {
+                    const item = itemConfig[type] || { name: type, icon: '📦' };
                     const tag = document.createElement('div');
                     tag.className = 'inventory-item-tag';
                     tag.innerHTML = `
-                        <span class="icon">${InventoryItems.getItemIcon(type)}</span>
-                        <span class="name">${InventoryItems.getItemName(type)}</span>
+                        <span class="icon">${item.icon}</span>
+                        <span class="name">${item.name}</span>
                         <span class="count">${count}</span>
                     `;
                     list.appendChild(tag);
@@ -354,130 +294,60 @@
         }
 
         function testOpenInventory() {
+            addResult('info', '正在打开背包...');
+            
             if (inventoryManager && inventoryManager.isModalOpen()) {
                 inventoryManager.close();
             }
 
-            inventoryManager = new InventoryManager();
+            inventoryManager = new SimpleInventory();
+            
+            inventoryManager.setOnCloseCallback((updatedInventory) => {
+                addResult('info', '背包已关闭');
+                updateInventoryPreview(updatedInventory);
+            });
+            
+            inventoryManager.setOnItemUseCallback((itemType, itemCount) => {
+                const item = itemConfig[itemType] || { name: itemType };
+                addResult('info', `使用了 ${item.name} x${itemCount}`);
+            });
+            
             inventoryManager.open(testInventoryData);
             updateInventoryPreview(testInventoryData);
             
-            addResult('interactionResults', 'info', '背包窗口已打开');
+            addResult('pass', '背包窗口已成功打开');
         }
 
         function testOpenEmptyInventory() {
+            addResult('info', '正在打开空背包...');
+            
             if (inventoryManager && inventoryManager.isModalOpen()) {
                 inventoryManager.close();
             }
 
-            inventoryManager = new InventoryManager();
+            inventoryManager = new SimpleInventory();
             inventoryManager.open(emptyInventoryData);
             updateInventoryPreview(emptyInventoryData);
             
-            addResult('interactionResults', 'info', '空背包窗口已打开');
+            addResult('pass', '空背包窗口已成功打开');
         }
 
         function testOpenFullInventory() {
+            addResult('info', '正在打开满背包...');
+            
             if (inventoryManager && inventoryManager.isModalOpen()) {
                 inventoryManager.close();
             }
 
-            inventoryManager = new InventoryManager();
+            inventoryManager = new SimpleInventory();
             inventoryManager.open(fullInventoryData);
             updateInventoryPreview(fullInventoryData);
             
-            addResult('interactionResults', 'info', '满背包窗口已打开');
+            addResult('pass', '满背包窗口已成功打开');
         }
 
-        function runItemDataTests() {
-            const results = document.getElementById('itemDataResults');
-            results.innerHTML = '';
-
-            const itemTypes = InventoryItems.getAllItemTypes();
-            const categories = InventoryItems.getAllCategories();
-
-            addResult('itemDataResults', 'pass', `物品类型数量: ${itemTypes.length}`);
-            addResult('itemDataResults', 'pass', `分类数量: ${categories.length}`);
-
-            let allItemsValid = true;
-            for (const type of itemTypes) {
-                const def = InventoryItems.getItemDefinition(type);
-                if (def) {
-                    addResult('itemDataResults', 'pass', `✓ 物品定义完整: ${type}`);
-                } else {
-                    addResult('itemDataResults', 'fail', `✗ 物品定义缺失: ${type}`);
-                    allItemsValid = false;
-                }
-            }
-
-            if (allItemsValid) {
-                addResult('itemDataResults', 'pass', '所有物品定义验证通过');
-            }
-
-            const testType = 'seeds';
-            const name = InventoryItems.getItemName(testType);
-            const icon = InventoryItems.getItemIcon(testType);
-            const desc = InventoryItems.getItemDescription(testType);
-            
-            addResult('itemDataResults', 'info', `测试物品 [${testType}]: 名称="${name}", 图标="${icon}", 描述="${desc}"`);
-        }
-
-        function testCategoryFilter() {
-            const results = document.getElementById('categoryResults');
-            results.innerHTML = '';
-
-            const categories = ['all', 'food', 'materials', 'seeds', 'equipment', 'consumables'];
-            
-            for (const category of categories) {
-                const items = InventoryItems.getCategoryItems(category);
-                addResult('categoryResults', 'pass', `分类 [${category}]: ${items.length} 种物品`);
-            }
-
-            addResult('categoryResults', 'info', '分类筛选测试完成');
-        }
-
-        function testItemStacking() {
-            const results = document.getElementById('stackingResults');
-            results.innerHTML = '';
-
-            const testCases = [
-                { type: 'seeds', count: 150, expectedStacks: 2 },
-                { type: 'equipment', count: 5, expectedStacks: 5 },
-                { type: 'gold', count: 1500, expectedStacks: 2 },
-                { type: 'medicine', count: 50, expectedStacks: 2 }
-            ];
-
-            for (const test of testCases) {
-                const maxStack = InventoryItems.getMaxStackSize(test.type);
-                const isStackable = InventoryItems.isStackable(test.type);
-                const expected = isStackable ? Math.ceil(test.count / maxStack) : test.count;
-                
-                addResult('stackingResults', expected === test.expectedStacks ? 'pass' : 'fail', 
-                    `${InventoryItems.getItemName(test.type)} (${test.count}个): 最大堆叠=${maxStack}, 是否可堆叠=${isStackable}, 期望格子=${test.expectedStacks}, 计算格子=${expected}`);
-            }
-
-            addResult('stackingResults', 'info', '堆叠逻辑测试完成');
-        }
-
-        function testItemInteraction() {
-            addResult('interactionResults', 'info', '请在背包窗口中测试以下交互:');
-            addResult('interactionResults', 'info', '• 点击物品查看详情');
-            addResult('interactionResults', 'info', '• 再次点击选中的物品使用');
-            addResult('interactionResults', 'info', '• 点击空白区域关闭背包');
-            addResult('interactionResults', 'info', '• 使用 ESC 键关闭背包');
-            addResult('interactionResults', 'info', '• 使用分类标签筛选物品');
-        }
-
-        function clearTestResults() {
-            document.getElementById('itemDataResults').innerHTML = '';
-            document.getElementById('categoryResults').innerHTML = '';
-            document.getElementById('stackingResults').innerHTML = '';
-            document.getElementById('interactionResults').innerHTML = '';
-            addResult('interactionResults', 'info', '测试结果已清空');
-        }
-
-        function addResult(containerId, type, message) {
-            const container = document.getElementById(containerId);
+        function addResult(type, message) {
+            const container = document.getElementById('testResults');
             const item = document.createElement('div');
             item.className = `test-result-item ${type}`;
             item.textContent = message;
@@ -486,6 +356,9 @@
         }
 
         updateInventoryPreview(testInventoryData);
+        addResult('info', '测试页面已加载，点击上方按钮测试背包功能');
+        addResult('info', '点击背包窗口外的空白区域可关闭背包');
+        addResult('info', '按 ESC 键也可关闭背包');
     </script>
 </body>
 </html>

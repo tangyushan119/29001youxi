@@ -1,6 +1,6 @@
 import { PlayerRenderer } from './PlayerRenderer.js';
 import { Player } from './Player.js';
-import { InventoryManager } from '../ui/inventory/inventory-manager.js';
+import { SimpleInventory } from '../ui/inventory/SimpleInventory.js';
 
 class Scene {
     constructor(name) {
@@ -733,7 +733,7 @@ class GameScene extends Scene {
         const inventoryData = { ...this.player.inventory };
         
         if (!this.inventoryManager) {
-            this.inventoryManager = new InventoryManager();
+            this.inventoryManager = new SimpleInventory();
         }
         
         this.inventoryManager.setOnCloseCallback((updatedInventory) => {
