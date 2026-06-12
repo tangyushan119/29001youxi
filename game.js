@@ -199,12 +199,12 @@ class SurvivalGame {
             const distY = Math.abs(y - resource.y);
             
             if (distX <= resource.size && distY <= resource.size) {
-                if (this.gameState.stamina < 5) {
+                if (this.gameState.stamina < 2) {
                     console.log('体力不足，无法采集');
                     return;
                 }
                 
-                this.consumeStamina(5);
+                this.consumeStamina(2);
                 resource.collected = true;
                 resource.respawnTimer = 5000;
                 
@@ -289,7 +289,7 @@ class SurvivalGame {
                 break;
         }
         
-        this.consumeStamina(0.5);
+        this.consumeStamina(0.15);
         this.gameState.player.x = Math.max(0, Math.min(this.canvas.width - this.gameState.player.width, this.gameState.player.x));
         this.gameState.player.y = Math.max(0, Math.min(this.canvas.height - this.gameState.player.height, this.gameState.player.y));
     }
@@ -300,7 +300,7 @@ class SurvivalGame {
 
     regenerateStamina() {
         if (this.gameState.stamina < 200) {
-            this.gameState.stamina = Math.min(200, this.gameState.stamina + 0.2);
+            this.gameState.stamina = Math.min(200, this.gameState.stamina + 0.5);
         }
     }
 

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>体力消耗测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2ecc71;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .test-section h2 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .test-result {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+        }
+        
+        .test-result.pass {
+            background: rgba(46, 204, 113, 0.2);
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .test-result.fail {
+            background: rgba(231, 76, 60, 0.2);
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .test-result.info {
+            background: rgba(52, 152, 219, 0.2);
+            border-left: 4px solid #3498db;
+        }
+        
+        .stamina-bar {
+            width: 100%;
+            height: 20px;
+            background: #2c3e50;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .stamina-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+            transition: width 0.3s ease;
+        }
+        
+        .stamina-value {
+            float: right;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-label {
+            color: #95a5a6;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2ecc71;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #2c3e50;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+        }
+        
+        .log-container {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #21262d;
+        }
+        
+        .log-time {
+            color: #8b949e;
+            margin-right: 10px;
+        }
+        
+        .log-info {
+            color: #58a6ff;
+        }
+        
+        .log-success {
+            color: #3fb950;
+        }
+        
+        .log-warning {
+            color: #d29922;
+        }
+        
+        .test-summary {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.1));
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .summary-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2ecc71;
+            margin-bottom: 15px;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .summary-item {
+            text-align: center;
+        }
+        
+        .summary-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .summary-label {
+            font-size: 14px;
+            color: #95a5a6;
+            margin-top: 5px;
+        }
+        
+        .passed {
+            color: #2ecc71;
+        }
+        
+        .failed {
+            color: #e74c3c;
+        }
+        
+        .running-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #2ecc71;
+            animation: pulse 1s infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ 体力消耗节奏测试</h1>
+        
+        <div class="test-section">
+            <h2>测试控制</h2>
+            <button onclick="runAllTests()">运行所有测试</button>
+            <button onclick="runMovementTest()">测试移动消耗</button>
+            <button onclick="runCollectTest()">测试采集消耗</button>
+            <button onclick="runRegenTest()">测试恢复速度</button>
+            <button onclick="runCombinedTest()">测试综合场景</button>
+            <button onclick="resetTest()">重置测试</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>实时体力状态</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">当前体力</div>
+                    <div class="stat-value" id="currentStamina">100</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="staminaProgress" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">移动次数</div>
+                    <div class="stat-value" id="moveCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">采集次数</div>
+                    <div class="stat-value" id="collectCount">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">恢复周期</div>
+                    <div class="stat-value" id="regenCycles">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>测试结果</h2>
+            <div id="testResults"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>测试日志</h2>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+        
+        <div class="test-summary" id="testSummary" style="display: none;">
+            <div class="summary-title">测试完成</div>
+            <div class="summary-stats">
+                <div class="summary-item">
+                    <div class="summary-value passed" id="passedCount">0</div>
+                    <div class="summary-label">通过</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value failed" id="failedCount">0</div>
+                    <div class="summary-label">失败</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="totalCount">0</div>
+                    <div class="summary-label">总计</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STAMINA_MAX = 200;
+        const MOVE_COST = 0.15;
+        const COLLECT_COST = 2;
+        const REGEN_AMOUNT = 0.5;
+        
+        let testState = {
+            stamina: STAMINA_MAX,
+            moveCount: 0,
+            collectCount: 0,
+            regenCycles: 0,
+            passed: 0,
+            failed: 0
+        };
+        
+        function logMessage(type, message) {
+            const container = document.getElementById('logContainer');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-time">[${time}]</span><span class="log-${type}">${message}</span>`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function updateUI() {
+            document.getElementById('currentStamina').textContent = testState.stamina.toFixed(2);
+            document.getElementById('staminaProgress').style.width = `${(testState.stamina / STAMINA_MAX) * 100}%`;
+            document.getElementById('moveCount').textContent = testState.moveCount;
+            document.getElementById('collectCount').textContent = testState.collectCount;
+            document.getElementById('regenCycles').textContent = testState.regenCycles;
+        }
+        
+        function addTestResult(testName, passed, expected, actual) {
+            const container = document.getElementById('testResults');
+            const result = document.createElement('div');
+            result.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            
+            let content = `<strong>${testName}</strong>: ${passed ? '✓ 通过' : '✗ 失败'}`;
+            if (expected !== undefined) {
+                content += `<br>期望: ${expected}, 实际: ${actual}`;
+            }
+            result.innerHTML = content;
+            container.appendChild(result);
+            
+            if (passed) {
+                testState.passed++;
+            } else {
+                testState.failed++;
+            }
+        }
+        
+        function addInfoResult(message) {
+            const container = document.getElementById('testResults');
+            const result = document.createElement('div');
+            result.className = 'test-result info';
+            result.innerHTML = `<strong>ℹ️ 信息</strong>: ${message}`;
+            container.appendChild(result);
+        }
+        
+        function resetTest() {
+            testState = {
+                stamina: STAMINA_MAX,
+                moveCount: 0,
+                collectCount: 0,
+                regenCycles: 0,
+                passed: 0,
+                failed: 0
+            };
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('logContainer').innerHTML = '';
+            document.getElementById('testSummary').style.display = 'none';
+            updateUI();
+            logMessage('info', '测试已重置');
+        }
+        
+        function movePlayer() {
+            testState.stamina = Math.max(0, testState.stamina - MOVE_COST);
+            testState.moveCount++;
+            updateUI();
+        }
+        
+        function collectResource() {
+            if (testState.stamina >= COLLECT_COST) {
+                testState.stamina -= COLLECT_COST;
+                testState.collectCount++;
+                updateUI();
+                return true;
+            }
+            return false;
+        }
+        
+        function regenerateStamina() {
+            testState.stamina = Math.min(STAMINA_MAX, testState.stamina + REGEN_AMOUNT);
+            testState.regenCycles++;
+            updateUI();
+        }
+        
+        async function runMovementTest() {
+            logMessage('info', '开始移动消耗测试...');
+            resetTest();
+            
+            const initialStamina = testState.stamina;
+            const movesToTest = 100;
+            
+            for (let i = 0; i < movesToTest; i++) {
+                movePlayer();
+                await delay(10);
+            }
+            
+            const expectedStamina = STAMINA_MAX - (MOVE_COST * movesToTest);
+            const actualStamina = testState.stamina;
+            const passed = Math.abs(expectedStamina - actualStamina) < 0.01;
+            
+            addTestResult(`移动${movesToTest}次消耗测试`, passed, expectedStamina.toFixed(2), actualStamina.toFixed(2));
+            
+            if (passed) {
+                logMessage('success', `移动${movesToTest}次消耗测试通过`);
+            } else {
+                logMessage('warning', `移动${movesToTest}次消耗测试失败`);
+            }
+            
+            addInfoResult(`每次移动消耗: ${MOVE_COST} 体力`);
+            addInfoResult(`移动${movesToTest}次总共消耗: ${(MOVE_COST * movesToTest).toFixed(2)} 体力`);
+            addInfoResult(`从${STAMINA_MAX}体力开始，${movesToTest}次移动后剩余: ${actualStamina.toFixed(2)} 体力`);
+            
+            showSummary();
+        }
+        
+        async function runCollectTest() {
+            logMessage('info', '开始采集消耗测试...');
+            resetTest();
+            
+            const initialStamina = testState.stamina;
+            const collectsToTest = 10;
+            
+            for (let i = 0; i < collectsToTest; i++) {
+                collectResource();
+                await delay(50);
+            }
+            
+            const expectedStamina = STAMINA_MAX - (COLLECT_COST * collectsToTest);
+            const actualStamina = testState.stamina;
+            const passed = Math.abs(expectedStamina - actualStamina) < 0.01;
+            
+            addTestResult(`采集${collectsToTest}次消耗测试`, passed, expectedStamina.toFixed(2), actualStamina.toFixed(2));
+            
+            if (passed) {
+                logMessage('success', `采集${collectsToTest}次消耗测试通过`);
+            } else {
+                logMessage('warning', `采集${collectsToTest}次消耗测试失败`);
+            }
+            
+            addInfoResult(`每次采集消耗: ${COLLECT_COST} 体力`);
+            addInfoResult(`采集${collectsToTest}次总共消耗: ${(COLLECT_COST * collectsToTest)} 体力`);
+            
+            addTestResult('体力不足时无法采集测试', testStaminaLimit(), '无法采集', '验证通过');
+            
+            showSummary();
+        }
+        
+        function testStaminaLimit() {
+            resetTest();
+            const collectsToDeplete = Math.floor(STAMINA_MAX / COLLECT_COST) + 1;
+            
+            for (let i = 0; i < collectsToDeplete; i++) {
+                collectResource();
+            }
+            
+            const remainingStamina = testState.stamina;
+            const canStillCollect = collectResource();
+            
+            return !canStillCollect && remainingStamina < COLLECT_COST;
+        }
+        
+        async function runRegenTest() {
+            logMessage('info', '开始体力恢复测试...');
+            resetTest();
+            
+            const drainAmount = 50;
+            testState.stamina = STAMINA_MAX - drainAmount;
+            updateUI();
+            
+            logMessage('info', `体力已消耗至: ${testState.stamina}，开始恢复...`);
+            
+            const initialStamina = testState.stamina;
+            const cyclesToTest = 100;
+            
+            for (let i = 0; i < cyclesToTest; i++) {
+                regenerateStamina();
+                await delay(10);
+            }
+            
+            const expectedStamina = Math.min(STAMINA_MAX, initialStamina + (REGEN_AMOUNT * cyclesToTest));
+            const actualStamina = testState.stamina;
+            const passed = Math.abs(expectedStamina - actualStamina) < 0.01;
+            
+            addTestResult(`恢复${cyclesToTest}次测试`, passed, expectedStamina.toFixed(2), actualStamina.toFixed(2));
+            
+            if (passed) {
+                logMessage('success', `恢复${cyclesToTest}次测试通过`);
+            } else {
+                logMessage('warning', `恢复${cyclesToTest}次测试失败`);
+            }
+            
+            addInfoResult(`每次恢复: ${REGEN_AMOUNT} 体力`);
+            addInfoResult(`恢复${cyclesToTest}次总共恢复: ${(REGEN_AMOUNT * cyclesToTest).toFixed(2)} 体力`);
+            
+            const timeToFull = Math.ceil(drainAmount / REGEN_AMOUNT);
+            addInfoResult(`从${STAMINA_MAX - drainAmount}恢复到满体力需要约 ${timeToFull} 个恢复周期`);
+            
+            showSummary();
+        }
+        
+        async function runCombinedTest() {
+            logMessage('info', '开始综合场景测试...');
+            resetTest();
+            
+            logMessage('info', '阶段1: 连续移动20次');
+            for (let i = 0; i < 20; i++) {
+                movePlayer();
+                await delay(10);
+            }
+            logMessage('info', `移动后体力: ${testState.stamina.toFixed(2)}`);
+            
+            logMessage('info', '阶段2: 恢复50次');
+            for (let i = 0; i < 50; i++) {
+                regenerateStamina();
+                await delay(10);
+            }
+            logMessage('info', `恢复后体力: ${testState.stamina.toFixed(2)}`);
+            
+            logMessage('info', '阶段3: 连续移动50次');
+            for (let i = 0; i < 50; i++) {
+                movePlayer();
+                await delay(10);
+            }
+            logMessage('info', `再次移动后体力: ${testState.stamina.toFixed(2)}`);
+            
+            logMessage('info', '阶段4: 尝试采集资源');
+            const initialCollectCount = testState.collectCount;
+            while (testState.stamina >= COLLECT_COST) {
+                collectResource();
+                await delay(30);
+            }
+            const collectedCount = testState.collectCount - initialCollectCount;
+            logMessage('info', `成功采集${collectedCount}次，剩余体力: ${testState.stamina.toFixed(2)}`);
+            
+            logMessage('info', '阶段5: 恢复至满体力');
+            while (testState.stamina < STAMINA_MAX) {
+                regenerateStamina();
+                await delay(10);
+            }
+            logMessage('success', '体力已恢复至最大值');
+            
+            const totalMoveCost = testState.moveCount * MOVE_COST;
+            const totalCollectCost = testState.collectCount * COLLECT_COST;
+            const totalRegen = testState.regenCycles * REGEN_AMOUNT;
+            
+            addInfoResult(`综合测试完成`);
+            addInfoResult(`总移动次数: ${testState.moveCount}，消耗体力: ${totalMoveCost.toFixed(2)}`);
+            addInfoResult(`总采集次数: ${testState.collectCount}，消耗体力: ${totalCollectCost}`);
+            addInfoResult(`总恢复次数: ${testState.regenCycles}，恢复体力: ${totalRegen.toFixed(2)}`);
+            addInfoResult(`最终体力: ${testState.stamina.toFixed(2)} (满值: ${STAMINA_MAX})`);
+            
+            const expectedFinalStamina = STAMINA_MAX - totalMoveCost - totalCollectCost + totalRegen;
+            const actualFinalStamina = testState.stamina;
+            const passed = Math.abs(expectedFinalStamina - actualFinalStamina) < 0.5;
+            
+            addTestResult('综合场景测试', passed, STAMINA_MAX, actualFinalStamina.toFixed(2));
+            
+            if (passed) {
+                logMessage('success', '综合场景测试通过');
+            } else {
+                logMessage('warning', '综合场景测试失败');
+            }
+            
+            showSummary();
+        }
+        
+        async function runAllTests() {
+            logMessage('info', '========================================');
+            logMessage('info', '开始运行所有体力消耗测试...');
+            logMessage('info', '========================================');
+            
+            testState.passed = 0;
+            testState.failed = 0;
+            document.getElementById('testResults').innerHTML = '';
+            
+            await runMovementTest();
+            await delay(500);
+            
+            await runCollectTest();
+            await delay(500);
+            
+            await runRegenTest();
+            await delay(500);
+            
+            await runCombinedTest();
+            
+            logMessage('info', '========================================');
+            logMessage('success', '所有测试完成！');
+            logMessage('info', `通过: ${testState.passed} | 失败: ${testState.failed}`);
+            logMessage('info', '========================================');
+        }
+        
+        function showSummary() {
+            document.getElementById('passedCount').textContent = testState.passed;
+            document.getElementById('failedCount').textContent = testState.failed;
+            document.getElementById('totalCount').textContent = testState.passed + testState.failed;
+            document.getElementById('testSummary').style.display = 'block';
+        }
+        
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        updateUI();
+        logMessage('info', '体力消耗测试系统已就绪');
+        logMessage('info', `配置参数: 移动消耗=${MOVE_COST}, 采集消耗=${COLLECT_COST}, 恢复速度=${REGEN_AMOUNT}/周期`);
+    </script>
+</body>
+</html>

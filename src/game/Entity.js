@@ -122,7 +122,7 @@ class PlayerEntity extends Entity {
                 break;
         }
         
-        this.stats.stamina = Math.max(0, this.stats.stamina - 0.5);
+        this.stats.stamina = Math.max(0, this.stats.stamina - 0.15);
     }
 
     consumeStamina(amount) {
@@ -131,7 +131,7 @@ class PlayerEntity extends Entity {
 
     regenerateStamina() {
         if (this.stats.stamina < 200) {
-            this.stats.stamina = Math.min(200, this.stats.stamina + 0.2);
+            this.stats.stamina = Math.min(200, this.stats.stamina + 0.5);
         }
     }
 

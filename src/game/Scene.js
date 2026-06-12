@@ -346,7 +346,7 @@ class GameScene extends Scene {
 
             this.player.update = (deltaTime) => {
                 if (this.player.stamina < 200) {
-                    this.player.stamina = Math.min(200, this.player.stamina + 0.2);
+                    this.player.stamina = Math.min(200, this.player.stamina + 0.5);
                 }
             };
 
@@ -682,7 +682,7 @@ class GameScene extends Scene {
                 break;
         }
         
-        this.player.stamina = Math.max(0, this.player.stamina - 0.5);
+        this.player.stamina = Math.max(0, this.player.stamina - 0.15);
         this.player.x = Math.max(0, Math.min(this.world.width - width, this.player.x));
         this.player.y = Math.max(0, Math.min(this.world.height - height, this.player.y));
         
@@ -701,12 +701,12 @@ class GameScene extends Scene {
             const interactionRadius = resource.size || 35;
             
             if (distX <= interactionRadius && distY <= interactionRadius) {
-                if (this.player.stamina < 5) {
+                if (this.player.stamina < 2) {
                     this.game.uiManager.showWarning('体力不足，无法采集');
                     return;
                 }
                 
-                this.player.stamina -= 5;
+                this.player.stamina -= 2;
                 resource.collected = true;
                 resource.respawnTimer = 5000;
                 
