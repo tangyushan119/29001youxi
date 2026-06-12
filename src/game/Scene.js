@@ -134,6 +134,8 @@ class Scene {
     onRender() {}
 }
 
+import { PlayerRenderer } from './PlayerRenderer.js';
+
 class GameScene extends Scene {
     constructor(name) {
         super(name);
@@ -141,6 +143,9 @@ class GameScene extends Scene {
         this.world = null;
         this.hud = null;
         this.resourceRenderConfigs = null;
+        this.playerRenderer = new PlayerRenderer();
+        this.isPlayerWalking = false;
+        this.walkAnimationFrame = null;
     }
 
     load() {
@@ -418,6 +423,7 @@ class GameScene extends Scene {
         if (this.player) {
             this.player.update?.(deltaTime);
             this.updatePlayerPosition();
+            this.playerRenderer.update(deltaTime);
         }
         this.updateResources();
         this.updatePlots();
@@ -494,36 +500,8 @@ class GameScene extends Scene {
     }
 
     drawPlayer(ctx, x, y, width, height, direction) {
-        ctx.save();
-        ctx.translate(x, y);
-        
-        let angle = 0;
-        switch(direction) {
-            case 'up': angle = 0; break;
-            case 'down': angle = Math.PI; break;
-            case 'left': angle = -Math.PI / 2; break;
-            case 'right': angle = Math.PI / 2; break;
-        }
-        ctx.rotate(angle);
-        
-        ctx.fillStyle = '#2c3e50';
-        ctx.fillRect(-width / 2, -height / 2, width, height);
-        
-        ctx.fillStyle = '#34495e';
-        ctx.fillRect(-width / 2, -height / 2, width, height / 3);
-        
-        ctx.fillStyle = '#e74c3c';
-        ctx.beginPath();
-        ctx.arc(0, -height / 2 + 8, 8, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(-3, -height / 2 + 10, 2, 0, Math.PI * 2);
-        ctx.arc(3, -height / 2 + 10, 2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.restore();
+        this.playerRenderer.drawShadow(ctx, x, y);
+        this.playerRenderer.draw(ctx, x, y, direction);
     }
 
     drawPlot(ctx, plot) {
@@ -688,6 +666,17 @@ class GameScene extends Scene {
         
         this.game.renderEngine.setCameraPosition(this.player.x, this.player.y);
         this.savePlayerToCache();
+        
+        this.playerRenderer.setWalking(true);
+        this.playerRenderer.setDirection(direction);
+        
+        if (this.walkAnimationFrame) {
+            clearTimeout(this.walkAnimationFrame);
+        }
+        
+        this.walkAnimationFrame = setTimeout(() => {
+            this.playerRenderer.setWalking(false);
+        }, 200);
     }
 
     collectResource(x, y) {

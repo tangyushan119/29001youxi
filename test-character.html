@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人物模型测试 - 行走动画展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #4a69bd;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .canvas-wrapper {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(74, 105, 189, 0.3);
+        }
+        
+        canvas {
+            border-radius: 8px;
+            background: #1a1a2e;
+            display: block;
+        }
+        
+        .info-panel {
+            background: rgba(0,0,0,0.4);
+            border-radius: 12px;
+            padding: 25px;
+            width: 320px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(74, 105, 189, 0.3);
+        }
+        
+        .info-title {
+            color: #4a69bd;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(74, 105, 189, 0.3);
+        }
+        
+        .control-info {
+            margin-bottom: 20px;
+        }
+        
+        .control-info h3 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .control-list {
+            list-style: none;
+            padding-left: 15px;
+        }
+        
+        .control-list li {
+            margin: 8px 0;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .key {
+            background: rgba(74, 105, 189, 0.5);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .animation-states {
+            margin-top: 20px;
+        }
+        
+        .state-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .state-label {
+            color: #b8c5d6;
+        }
+        
+        .state-value {
+            font-weight: bold;
+            color: #2ecc71;
+        }
+        
+        .direction-display {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(74, 105, 189, 0.2);
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .direction-arrow {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .direction-text {
+            color: #f1c40f;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .features-list {
+            margin-top: 20px;
+            padding-left: 15px;
+        }
+        
+        .features-list li {
+            margin: 8px 0;
+            color: #b8c5d6;
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        .features-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #2ecc71;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .info-panel {
+                width: 100%;
+                max-width: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 人物模型测试 - 行走动画展示</h1>
+    
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="characterCanvas" width="400" height="400"></canvas>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-title">🎯 控制说明</div>
+            
+            <div class="control-info">
+                <h3>移动控制</h3>
+                <ul class="control-list">
+                    <li><span>向上移动</span><span class="key">W / ↑</span></li>
+                    <li><span>向下移动</span><span class="key">S / ↓</span></li>
+                    <li><span>向左移动</span><span class="key">A / ←</span></li>
+                    <li><span>向右移动</span><span class="key">D / →</span></li>
+                    <li><span>停止移动</span><span class="key">空格键</span></li>
+                </ul>
+            </div>
+            
+            <div class="direction-display">
+                <div class="direction-arrow" id="directionArrow">↓</div>
+                <div class="direction-text" id="directionText">向下</div>
+            </div>
+            
+            <div class="animation-states">
+                <div class="state-item">
+                    <span class="state-label">行走状态:</span>
+                    <span class="state-value" id="walkState">静止</span>
+                </div>
+                <div class="state-item">
+                    <span class="state-label">动画帧:</span>
+                    <span class="state-value" id="animationFrame">0.00</span>
+                </div>
+            </div>
+            
+            <div class="info-title">✨ 人物特性</div>
+            <ul class="features-list">
+                <li>完整的人体结构（头部、躯干、四肢）</li>
+                <li>真实的行走动画（手臂摆动、腿部迈步）</li>
+                <li>头部随行走轻微上下晃动</li>
+                <li>动态阴影效果</li>
+                <li>流畅的转向动画</li>
+                <li>自然的肤色和衣着配色</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        import { PlayerRenderer } from './src/game/PlayerRenderer.js';
+        
+        const canvas = document.getElementById('characterCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const playerRenderer = new PlayerRenderer();
+        
+        const directionArrow = document.getElementById('directionArrow');
+        const directionText = document.getElementById('directionText');
+        const walkState = document.getElementById('walkState');
+        const animationFrame = document.getElementById('animationFrame');
+        
+        let playerX = canvas.width / 2;
+        let playerY = canvas.height / 2;
+        let direction = 'down';
+        let isWalking = false;
+        
+        const keys = {
+            KeyW: false,
+            KeyS: false,
+            KeyA: false,
+            KeyD: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+        
+        const directionMap = {
+            up: { x: 0, y: -3, arrow: '↑', text: '向上' },
+            down: { x: 0, y: 3, arrow: '↓', text: '向下' },
+            left: { x: -3, y: 0, arrow: '←', text: '向左' },
+            right: { x: 3, y: 0, arrow: '→', text: '向右' }
+        };
+        
+        function updateDirectionDisplay(newDirection) {
+            direction = newDirection;
+            directionArrow.textContent = directionMap[newDirection].arrow;
+            directionText.textContent = directionMap[newDirection].text;
+        }
+        
+        function handleKeyDown(e) {
+            if (keys.hasOwnProperty(e.code)) {
+                e.preventDefault();
+                keys[e.code] = true;
+                
+                let newDirection = direction;
+                
+                if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+                    newDirection = 'up';
+                } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+                    newDirection = 'down';
+                } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+                    newDirection = 'left';
+                } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+                    newDirection = 'right';
+                }
+                
+                updateDirectionDisplay(newDirection);
+                playerRenderer.setDirection(newDirection);
+                playerRenderer.setWalking(true);
+                isWalking = true;
+            }
+            
+            if (e.code === 'Space') {
+                e.preventDefault();
+                playerRenderer.setWalking(false);
+                isWalking = false;
+            }
+        }
+        
+        function handleKeyUp(e) {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = false;
+                
+                const anyKeyPressed = Object.values(keys).some(v => v);
+                
+                if (!anyKeyPressed) {
+                    playerRenderer.setWalking(false);
+                    isWalking = false;
+                }
+            }
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(74, 105, 189, 0.1)';
+            ctx.lineWidth = 1;
+            
+            const gridSize = 40;
+            
+            for (let x = 0; x <= canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y <= canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        let lastTime = performance.now();
+        
+        function animate(currentTime) {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawGrid();
+            
+            if (isWalking) {
+                const move = directionMap[direction];
+                playerX += move.x;
+                playerY += move.y;
+                
+                playerX = Math.max(50, Math.min(canvas.width - 50, playerX));
+                playerY = Math.max(50, Math.min(canvas.height - 50, playerY));
+            }
+            
+            playerRenderer.update(deltaTime);
+            playerRenderer.drawShadow(ctx, playerX, playerY);
+            playerRenderer.draw(ctx, playerX, playerY, direction);
+            
+            walkState.textContent = isWalking ? '行走中' : '静止';
+            animationFrame.textContent = playerRenderer.animationTime.toFixed(2);
+            
+            requestAnimationFrame(animate);
+        }
+        
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
