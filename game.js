@@ -224,8 +224,20 @@ class SurvivalGame {
     }
 
     collectResource(x, y) {
+        const INTERACTION_RANGE = 80;
+        const { player } = this.gameState;
+        const playerCenterX = player.x + player.width / 2;
+        const playerCenterY = player.y + player.height / 2;
+        
         for (const resource of this.gameState.wildResources) {
             if (resource.collected) continue;
+            
+            const playerDistX = Math.abs(playerCenterX - resource.x);
+            const playerDistY = Math.abs(playerCenterY - resource.y);
+            
+            if (playerDistX > INTERACTION_RANGE || playerDistY > INTERACTION_RANGE) {
+                continue;
+            }
             
             const distX = Math.abs(x - resource.x);
             const distY = Math.abs(y - resource.y);

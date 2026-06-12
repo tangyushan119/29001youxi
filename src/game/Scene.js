@@ -636,8 +636,19 @@ class GameScene extends Scene {
     collectResource(x, y) {
         if (!this.world?.resources || !this.player || !this.game?.uiManager) return;
         
+        const INTERACTION_RANGE = 80;
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y + this.player.height / 2;
+        
         for (const resource of this.world.resources) {
             if (resource.collected) continue;
+            
+            const playerDistX = Math.abs(playerCenterX - resource.x);
+            const playerDistY = Math.abs(playerCenterY - resource.y);
+            
+            if (playerDistX > INTERACTION_RANGE || playerDistY > INTERACTION_RANGE) {
+                continue;
+            }
             
             const distX = Math.abs(x - resource.x);
             const distY = Math.abs(y - resource.y);
