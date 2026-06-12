@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人物模型测试 - 完整人形展示</title>
+    <title>人物模型测试 - 完整人形渲染验证</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #0c0c1e 0%, #1a1a3e 50%, #2a2a5e 100%);
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #2d2d5a 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -24,308 +20,215 @@
         
         h1 {
             margin-bottom: 25px;
-            color: #64b5f6;
-            font-size: 32px;
-            text-shadow: 2px 2px 8px rgba(100, 181, 246, 0.4);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .hero-icon {
-            font-size: 36px;
+            color: #7dd3fc;
+            font-size: 28px;
+            text-shadow: 0 0 20px rgba(125, 211, 252, 0.5);
         }
         
         .container {
             display: flex;
-            gap: 40px;
+            gap: 35px;
             flex-wrap: wrap;
             justify-content: center;
             align-items: flex-start;
-            max-width: 1200px;
         }
         
-        .canvas-wrapper {
-            background: rgba(0,0,0,0.4);
+        .canvas-container {
+            background: rgba(0,0,0,0.5);
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 12px 48px rgba(0,0,0,0.4), 0 0 60px rgba(100, 181, 246, 0.1);
-            border: 1px solid rgba(100, 181, 246, 0.2);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(125, 211, 252, 0.2);
         }
         
         canvas {
             border-radius: 12px;
-            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(180deg, #1e1e3e 0%, #16213e 100%);
             display: block;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
         }
         
-        .info-panel {
-            background: rgba(0,0,0,0.45);
+        .control-panel {
+            background: rgba(0,0,0,0.5);
             border-radius: 16px;
-            padding: 30px;
-            width: 340px;
-            box-shadow: 0 12px 48px rgba(0,0,0,0.4), 0 0 60px rgba(100, 181, 246, 0.1);
-            border: 1px solid rgba(100, 181, 246, 0.2);
+            padding: 25px;
+            width: 320px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(125, 211, 252, 0.2);
         }
         
-        .info-title {
-            color: #64b5f6;
-            font-size: 20px;
+        .panel-title {
+            color: #7dd3fc;
+            font-size: 18px;
             margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid rgba(100, 181, 246, 0.3);
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(125, 211, 252, 0.3);
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+        }
+        
+        .control-key {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
-        }
-        
-        .info-title::before {
-            content: '';
-            width: 4px;
-            height: 20px;
-            background: linear-gradient(180deg, #64b5f6, #42a5f5);
-            border-radius: 2px;
-        }
-        
-        .control-info {
-            margin-bottom: 25px;
-        }
-        
-        .control-info h3 {
-            color: #ef5350;
-            margin-bottom: 12px;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .control-info h3::before {
-            content: '🎮';
-        }
-        
-        .control-list {
-            list-style: none;
-            padding-left: 10px;
-        }
-        
-        .control-list li {
-            margin: 10px 0;
-            padding: 12px 15px;
+            padding: 10px 12px;
+            margin: 8px 0;
             background: rgba(255,255,255,0.05);
             border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
         
-        .control-list li:hover {
-            background: rgba(100, 181, 246, 0.1);
-            transform: translateX(5px);
+        .control-key:hover {
+            background: rgba(125, 211, 252, 0.1);
         }
         
-        .key {
-            background: linear-gradient(135deg, #1e3a5f, #2d5a87);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-family: 'Consolas', monospace;
+        .key-label {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+        
+        .key-code {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            padding: 5px 12px;
+            border-radius: 5px;
+            font-family: monospace;
             font-size: 13px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            border: 1px solid rgba(100, 181, 246, 0.3);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
         
-        .direction-display {
-            margin-top: 25px;
-            padding: 20px;
-            background: linear-gradient(135deg, rgba(100, 181, 246, 0.15), rgba(66, 165, 245, 0.1));
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid rgba(100, 181, 246, 0.2);
+        .status-section {
+            margin-bottom: 20px;
         }
         
-        .direction-arrow {
-            font-size: 56px;
-            margin-bottom: 12px;
-            color: #ffd54f;
-            text-shadow: 0 0 20px rgba(255, 213, 79, 0.5);
-            transition: transform 0.3s ease;
-        }
-        
-        .direction-text {
-            color: #ffd54f;
-            font-size: 20px;
-            font-weight: bold;
-            text-shadow: 0 0 10px rgba(255, 213, 79, 0.3);
-        }
-        
-        .animation-states {
-            margin-top: 25px;
-            padding: 15px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
-        }
-        
-        .state-item {
+        .status-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 8px 0;
             border-bottom: 1px solid rgba(255,255,255,0.08);
         }
         
-        .state-item:last-child {
-            border-bottom: none;
-        }
-        
-        .state-label {
-            color: #b0bec5;
+        .status-label {
+            color: #9ca3af;
             font-size: 14px;
         }
         
-        .state-value {
+        .status-value {
+            color: #4ade80;
             font-weight: bold;
-            font-family: 'Consolas', monospace;
-            font-size: 14px;
-            color: #66bb6a;
+            font-family: monospace;
         }
         
-        .features-list {
-            margin-top: 25px;
-            padding-left: 20px;
+        .direction-display {
+            background: linear-gradient(135deg, rgba(125, 211, 252, 0.1), rgba(59, 130, 246, 0.1));
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
         }
         
-        .features-list li {
-            margin: 12px 0;
-            color: #cfd8dc;
+        .direction-arrow {
+            font-size: 48px;
+            color: #fbbf24;
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+            margin-bottom: 8px;
+        }
+        
+        .direction-text {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0 8px 25px;
             position: relative;
-            padding-left: 25px;
-            font-size: 14px;
-            line-height: 1.5;
+            color: #d1d5db;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
         
-        .features-list li::before {
+        .feature-list li::before {
             content: '✓';
             position: absolute;
             left: 0;
-            color: #66bb6a;
+            color: #4ade80;
             font-weight: bold;
-            background: rgba(102, 187, 106, 0.2);
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-        
-        .stats-row {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .stat-item {
-            flex: 1;
-            padding: 12px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #fff;
-        }
-        
-        .stat-label {
-            font-size: 11px;
-            color: #78909c;
-            margin-top: 4px;
-        }
-        
-        @media (max-width: 800px) {
-            .container {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .info-panel {
-                width: 100%;
-                max-width: 400px;
-            }
-            
-            h1 {
-                font-size: 24px;
-                text-align: center;
-            }
         }
     </style>
 </head>
 <body>
-    <h1>
-        <span class="hero-icon">🦸</span>
-        人物模型测试 - 完整人形展示
-    </h1>
+    <h1>🦸 人物模型测试 - 完整人形渲染验证</h1>
     
     <div class="container">
-        <div class="canvas-wrapper">
-            <canvas id="characterCanvas" width="450" height="450"></canvas>
+        <div class="canvas-container">
+            <canvas id="canvas" width="400" height="400"></canvas>
         </div>
         
-        <div class="info-panel">
-            <div class="info-title">控制说明</div>
+        <div class="control-panel">
+            <div class="panel-title">🎮 控制说明</div>
             
-            <div class="control-info">
-                <h3>移动控制</h3>
-                <ul class="control-list">
-                    <li><span>向上移动</span><span class="key">W / ↑</span></li>
-                    <li><span>向下移动</span><span class="key">S / ↓</span></li>
-                    <li><span>向左移动</span><span class="key">A / ←</span></li>
-                    <li><span>向右移动</span><span class="key">D / →</span></li>
-                    <li><span>停止移动</span><span class="key">Space</span></li>
-                </ul>
+            <div class="controls">
+                <div class="control-key">
+                    <span class="key-label">向上移动</span>
+                    <span class="key-code">W / ↑</span>
+                </div>
+                <div class="control-key">
+                    <span class="key-label">向下移动</span>
+                    <span class="key-code">S / ↓</span>
+                </div>
+                <div class="control-key">
+                    <span class="key-label">向左移动</span>
+                    <span class="key-code">A / ←</span>
+                </div>
+                <div class="control-key">
+                    <span class="key-label">向右移动</span>
+                    <span class="key-code">D / →</span>
+                </div>
+                <div class="control-key">
+                    <span class="key-label">停止移动</span>
+                    <span class="key-code">Space</span>
+                </div>
             </div>
             
             <div class="direction-display">
-                <div class="direction-arrow" id="directionArrow">↓</div>
-                <div class="direction-text" id="directionText">向下</div>
+                <div class="direction-arrow" id="dirArrow">↓</div>
+                <div class="direction-text" id="dirText">向下</div>
             </div>
             
-            <div class="animation-states">
-                <div class="state-item">
-                    <span class="state-label">行走状态:</span>
-                    <span class="state-value" id="walkState">静止</span>
+            <div class="status-section">
+                <div class="status-row">
+                    <span class="status-label">行走状态:</span>
+                    <span class="status-value" id="walkStatus">静止</span>
                 </div>
-                <div class="state-item">
-                    <span class="state-label">动画帧:</span>
-                    <span class="state-value" id="animationFrame">0.00</span>
+                <div class="status-row">
+                    <span class="status-label">动画帧:</span>
+                    <span class="status-value" id="animFrame">0.00</span>
                 </div>
-            </div>
-            
-            <div class="stats-row">
-                <div class="stat-item">
-                    <div class="stat-value" id="statX">225</div>
-                    <div class="stat-label">X 位置</div>
+                <div class="status-row">
+                    <span class="status-label">位置 X:</span>
+                    <span class="status-value" id="posX">200</span>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="statY">225</div>
-                    <div class="stat-label">Y 位置</div>
+                <div class="status-row">
+                    <span class="status-label">位置 Y:</span>
+                    <span class="status-value" id="posY">200</span>
                 </div>
             </div>
             
-            <div class="info-title">人物特性</div>
-            <ul class="features-list">
-                <li>完整人体结构：头部、躯干、四肢（上臂/下臂/大腿/小腿）</li>
-                <li>精美的头部细节：头发、眼睛、腮红、微笑表情</li>
-                <li>流畅行走动画：手臂摆动、肘部弯曲、膝盖弯曲</li>
-                <li>真实步态：脚部抬起、迈步、落地动作</li>
+            <div class="panel-title">✨ 人物特性</div>
+            <ul class="feature-list">
+                <li>完整人体结构（头、躯干、四肢）</li>
+                <li>分层渲染：阴影→腿部→躯干→手臂→头部</li>
+                <li>行走动画：手臂摆动、肘部弯曲</li>
+                <li>行走动画：腿部迈步、膝盖弯曲</li>
                 <li>头部随行走自然晃动</li>
-                <li>动态阴影效果随步伐变化</li>
+                <li>动态阴影随步伐变化</li>
                 <li>四个方向平滑转向</li>
-                <li>自然配色：红色上衣、蓝色裤子、黑色鞋子</li>
+                <li>精美的面部细节（眼睛、腮红、微笑）</li>
             </ul>
         </div>
     </div>
@@ -333,66 +236,48 @@
     <script type="module">
         import { PlayerRenderer } from './src/game/PlayerRenderer.js';
         
-        const canvas = document.getElementById('characterCanvas');
+        const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
         const playerRenderer = new PlayerRenderer();
         
-        const directionArrow = document.getElementById('directionArrow');
-        const directionText = document.getElementById('directionText');
-        const walkState = document.getElementById('walkState');
-        const animationFrame = document.getElementById('animationFrame');
-        const statX = document.getElementById('statX');
-        const statY = document.getElementById('statY');
+        const dirArrow = document.getElementById('dirArrow');
+        const dirText = document.getElementById('dirText');
+        const walkStatus = document.getElementById('walkStatus');
+        const animFrame = document.getElementById('animFrame');
+        const posX = document.getElementById('posX');
+        const posY = document.getElementById('posY');
         
-        let playerX = canvas.width / 2;
-        let playerY = canvas.height / 2;
+        let px = canvas.width / 2;
+        let py = canvas.height / 2;
         let direction = 'down';
         let isWalking = false;
         
-        const keys = {
-            KeyW: false,
-            KeyS: false,
-            KeyA: false,
-            KeyD: false,
-            ArrowUp: false,
-            ArrowDown: false,
-            ArrowLeft: false,
-            ArrowRight: false
+        const keys = {};
+        const dirMap = {
+            up: { x: 0, y: -3, arrow: '↑', text: '向上' },
+            down: { x: 0, y: 3, arrow: '↓', text: '向下' },
+            left: { x: -3, y: 0, arrow: '←', text: '向左' },
+            right: { x: 3, y: 0, arrow: '→', text: '向右' }
         };
         
-        const directionMap = {
-            up: { x: 0, y: -3.5, arrow: '↑', text: '向上' },
-            down: { x: 0, y: 3.5, arrow: '↓', text: '向下' },
-            left: { x: -3.5, y: 0, arrow: '←', text: '向左' },
-            right: { x: 3.5, y: 0, arrow: '→', text: '向右' }
-        };
-        
-        function updateDirectionDisplay(newDirection) {
-            direction = newDirection;
-            directionArrow.textContent = directionMap[newDirection].arrow;
-            directionText.textContent = directionMap[newDirection].text;
+        function updateDir(newDir) {
+            direction = newDir;
+            dirArrow.textContent = dirMap[newDir].arrow;
+            dirText.textContent = dirMap[newDir].text;
         }
         
-        function handleKeyDown(e) {
-            if (keys.hasOwnProperty(e.code)) {
+        function onKeyDown(e) {
+            keys[e.code] = true;
+            
+            if (e.code === 'KeyW' || e.code === 'ArrowUp') updateDir('up');
+            else if (e.code === 'KeyS' || e.code === 'ArrowDown') updateDir('down');
+            else if (e.code === 'KeyA' || e.code === 'ArrowLeft') updateDir('left');
+            else if (e.code === 'KeyD' || e.code === 'ArrowRight') updateDir('right');
+            
+            if (['KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
                 e.preventDefault();
-                keys[e.code] = true;
-                
-                let newDirection = direction;
-                
-                if (e.code === 'KeyW' || e.code === 'ArrowUp') {
-                    newDirection = 'up';
-                } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
-                    newDirection = 'down';
-                } else if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
-                    newDirection = 'left';
-                } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
-                    newDirection = 'right';
-                }
-                
-                updateDirectionDisplay(newDirection);
-                playerRenderer.setDirection(newDirection);
+                playerRenderer.setDirection(direction);
                 playerRenderer.setWalking(true);
                 isWalking = true;
             }
@@ -404,83 +289,58 @@
             }
         }
         
-        function handleKeyUp(e) {
-            if (keys.hasOwnProperty(e.code)) {
-                keys[e.code] = false;
-                
-                const anyKeyPressed = Object.values(keys).some(v => v);
-                
-                if (!anyKeyPressed) {
-                    playerRenderer.setWalking(false);
-                    isWalking = false;
-                }
+        function onKeyUp(e) {
+            keys[e.code] = false;
+            const anyPressed = Object.values(keys).some(v => v);
+            if (!anyPressed) {
+                playerRenderer.setWalking(false);
+                isWalking = false;
             }
         }
         
         function drawGrid() {
-            ctx.strokeStyle = 'rgba(100, 181, 246, 0.08)';
+            ctx.strokeStyle = 'rgba(125, 211, 252, 0.08)';
             ctx.lineWidth = 1;
-            
-            const gridSize = 45;
-            
-            for (let x = 0; x <= canvas.width; x += gridSize) {
+            for (let i = 0; i <= canvas.width; i += 40) {
                 ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-            
-            for (let y = 0; y <= canvas.height; y += gridSize) {
+                ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
                 ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
+                ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
             }
-        }
-        
-        function drawGround() {
-            const gradient = ctx.createLinearGradient(0, canvas.height - 100, 0, canvas.height);
-            gradient.addColorStop(0, 'rgba(76, 175, 80, 0.1)');
-            gradient.addColorStop(1, 'rgba(67, 142, 69, 0.2)');
-            
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
         }
         
         let lastTime = performance.now();
         
         function animate(currentTime) {
-            const deltaTime = (currentTime - lastTime) / 1000;
+            const dt = (currentTime - lastTime) / 1000;
             lastTime = currentTime;
             
-            ctx.fillStyle = '#1a1a2e';
+            ctx.fillStyle = '#1e1e3e';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            drawGround();
             drawGrid();
             
             if (isWalking) {
-                const move = directionMap[direction];
-                playerX += move.x;
-                playerY += move.y;
-                
-                playerX = Math.max(60, Math.min(canvas.width - 60, playerX));
-                playerY = Math.max(60, Math.min(canvas.height - 60, playerY));
+                const move = dirMap[direction];
+                px += move.x;
+                py += move.y;
+                px = Math.max(50, Math.min(canvas.width - 50, px));
+                py = Math.max(50, Math.min(canvas.height - 50, py));
             }
             
-            playerRenderer.update(deltaTime);
-            playerRenderer.draw(ctx, playerX, playerY, direction);
+            playerRenderer.update(dt);
+            playerRenderer.draw(ctx, px, py, direction);
             
-            walkState.textContent = isWalking ? '行走中' : '静止';
-            animationFrame.textContent = playerRenderer.animationTime.toFixed(2);
-            statX.textContent = Math.round(playerX);
-            statY.textContent = Math.round(playerY);
+            walkStatus.textContent = isWalking ? '行走中' : '静止';
+            animFrame.textContent = playerRenderer.animationTime.toFixed(2);
+            posX.textContent = Math.round(px);
+            posY.textContent = Math.round(py);
             
             requestAnimationFrame(animate);
         }
         
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
         
         requestAnimationFrame(animate);
     </script>

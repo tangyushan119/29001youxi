@@ -1,3 +1,5 @@
+import { PlayerRenderer } from './PlayerRenderer.js';
+
 class Scene {
     constructor(name) {
         this.name = name;
@@ -133,8 +135,6 @@ class Scene {
     onUpdate(deltaTime) {}
     onRender() {}
 }
-
-import { PlayerRenderer } from './PlayerRenderer.js';
 
 class GameScene extends Scene {
     constructor(name) {
