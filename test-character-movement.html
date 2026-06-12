@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>人物移动渲染测试</title>
+    <title>人物移动渲染测试 - 四个方向行走</title>
     <style>
         body {
             margin: 0;
@@ -144,10 +144,44 @@
             font-size: 14px;
             max-width: 600px;
         }
+
+        .direction-indicator {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .dir-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .dir-indicator.active {
+            background: rgba(52, 152, 219, 0.3);
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+
+        .dir-indicator span {
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .dir-indicator label {
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
-    <h1>人物移动渲染测试</h1>
+    <h1>人物移动渲染测试 - 四个方向行走</h1>
     
     <div class="container">
         <div class="canvas-wrapper">
@@ -163,6 +197,25 @@
                 <button class="dir-btn right" data-dir="right">→</button>
             </div>
             
+            <div class="direction-indicator">
+                <div class="dir-indicator" data-show-dir="up">
+                    <span>↑</span>
+                    <label>上</label>
+                </div>
+                <div class="dir-indicator" data-show-dir="down">
+                    <span>↓</span>
+                    <label>下</label>
+                </div>
+                <div class="dir-indicator" data-show-dir="left">
+                    <span>←</span>
+                    <label>左</label>
+                </div>
+                <div class="dir-indicator" data-show-dir="right">
+                    <span>→</span>
+                    <label>右</label>
+                </div>
+            </div>
+            
             <div class="status">
                 <p>当前方向: <span id="current-direction">down</span></p>
                 <p>位置: <span id="position">200, 200</span></p>
@@ -175,15 +228,16 @@
             
             <div class="legend">
                 <h3>测试要点</h3>
-                <p>• 人物移动时仅自身翻转，背景保持不变</p>
-                <p>• 向左/右移动时人物朝向正确</p>
-                <p>• 动画平滑流畅</p>
+                <p>• 人物全程保持直立状态</p>
+                <p>• 四个方向行走动画自然流畅</p>
+                <p>• 向左行走时仅水平翻转，不旋转</p>
+                <p>• 背景网格保持稳定不翻转</p>
             </div>
         </div>
     </div>
     
     <div class="test-note">
-        <strong>测试说明：</strong>点击方向按钮或使用键盘控制人物移动，观察人物朝向变化是否正确，背景是否保持稳定不翻转。修复后，人物向左/右移动时应仅翻转自身，而不是旋转整个画面。
+        <strong>测试说明：</strong>使用方向按钮或键盘控制人物向四个方向移动，观察人物是否全程保持直立状态。修复后，人物在任何方向移动时都不应发生整体旋转，仅向左移动时进行水平翻转。
     </div>
 
     <script type="module">
@@ -230,7 +284,6 @@
         const player = new TestPlayer();
         const playerRenderer = new PlayerRenderer();
         
-        const keys = {};
         let lastMoveTime = 0;
 
         function drawBackground() {
@@ -267,7 +320,7 @@
             ctx.fill();
             ctx.fillStyle = '#fff';
             ctx.font = '10px Arial';
-            ctx.fillText('↑', 50, 95);
+            ctx.fillText('上', 50, 95);
             
             ctx.fillStyle = '#e17055';
             ctx.beginPath();
@@ -277,7 +330,27 @@
             ctx.closePath();
             ctx.fill();
             ctx.fillStyle = '#fff';
-            ctx.fillText('↓', 350, 395);
+            ctx.fillText('下', 350, 395);
+            
+            ctx.fillStyle = '#9b59b6';
+            ctx.beginPath();
+            ctx.moveTo(50, 350);
+            ctx.lineTo(80, 370);
+            ctx.lineTo(80, 330);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.fillText('左', 55, 395);
+            
+            ctx.fillStyle = '#3498db';
+            ctx.beginPath();
+            ctx.moveTo(350, 50);
+            ctx.lineTo(320, 70);
+            ctx.lineTo(320, 30);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.fillText('右', 345, 95);
         }
 
         function update(deltaTime) {
@@ -309,6 +382,14 @@
             document.getElementById('current-direction').textContent = player.direction;
             document.getElementById('position').textContent = `${Math.round(player.x)}, ${Math.round(player.y)}`;
             document.getElementById('is-walking').textContent = player.isWalking;
+            
+            document.querySelectorAll('.dir-indicator').forEach(el => {
+                el.classList.remove('active');
+            });
+            const activeIndicator = document.querySelector(`[data-show-dir="${player.direction}"]`);
+            if (activeIndicator) {
+                activeIndicator.classList.add('active');
+            }
         }
 
         function gameLoop(currentTime) {
@@ -322,8 +403,6 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            keys[e.code] = true;
-            
             const keyMap = {
                 'KeyW': 'up',
                 'KeyS': 'down',
@@ -340,10 +419,6 @@
                 player.move(keyMap[e.code]);
                 setTimeout(() => player.stopWalking(), 150);
             }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            keys[e.code] = false;
         });
 
         document.querySelectorAll('.dir-btn').forEach(btn => {

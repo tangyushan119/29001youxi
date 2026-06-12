@@ -34,32 +34,15 @@ class PlayerRenderer {
         ctx.save();
         ctx.translate(x, y);
 
-        const { flipX, rotation } = this.getDirectionTransform(direction);
-        
+        const flipX = direction === 'left';
         if (flipX) {
             ctx.scale(-1, 1);
         }
-        ctx.rotate(rotation);
 
-        this.drawShadow(ctx, isWalking, animationTime);
-        this.drawBody(ctx, isWalking, animationTime);
+        this.drawShadow(ctx, isWalking, animationTime, direction);
+        this.drawBody(ctx, isWalking, animationTime, direction);
 
         ctx.restore();
-    }
-
-    getDirectionTransform(direction) {
-        switch(direction) {
-            case 'up':
-                return { flipX: false, rotation: 0 };
-            case 'down':
-                return { flipX: false, rotation: Math.PI };
-            case 'left':
-                return { flipX: true, rotation: Math.PI / 2 };
-            case 'right':
-                return { flipX: false, rotation: Math.PI / 2 };
-            default:
-                return { flipX: false, rotation: 0 };
-        }
     }
 
     drawShadow(ctx, isWalking, animationTime) {
@@ -77,10 +60,10 @@ class PlayerRenderer {
         ctx.restore();
     }
 
-    drawBody(ctx, isWalking, animationTime) {
-        this.drawLegs(ctx, isWalking, animationTime);
+    drawBody(ctx, isWalking, animationTime, direction) {
+        this.drawLegs(ctx, isWalking, animationTime, direction);
         this.drawTorso(ctx);
-        this.drawArms(ctx, isWalking, animationTime);
+        this.drawArms(ctx, isWalking, animationTime, direction);
         this.drawHead(ctx, isWalking, animationTime);
     }
 
@@ -171,12 +154,18 @@ class PlayerRenderer {
         ctx.fill();
     }
 
-    drawArms(ctx, isWalking, animationTime) {
+    drawArms(ctx, isWalking, animationTime, direction) {
+        const isVertical = direction === 'up' || direction === 'down';
         const swing = isWalking ? Math.sin(animationTime) * 0.5 : 0;
         const elbowBend = isWalking ? Math.sin(animationTime + Math.PI / 2) * 0.3 : 0;
 
-        this.drawArm(ctx, 'left', swing, elbowBend);
-        this.drawArm(ctx, 'right', -swing, -elbowBend);
+        if (isVertical) {
+            this.drawArm(ctx, 'left', swing, elbowBend);
+            this.drawArm(ctx, 'right', -swing, -elbowBend);
+        } else {
+            this.drawArmSide(ctx, 'left', swing, elbowBend);
+            this.drawArmSide(ctx, 'right', -swing, -elbowBend);
+        }
     }
 
     drawArm(ctx, side, shoulderAngle, elbowAngle) {
@@ -211,12 +200,50 @@ class PlayerRenderer {
         ctx.restore();
     }
 
-    drawLegs(ctx, isWalking, animationTime) {
+    drawArmSide(ctx, side, shoulderAngle, elbowAngle) {
+        const upperArm = this.bodyConfig[side + 'UpperArm'];
+        const lowerArm = this.bodyConfig[side + 'LowerArm'];
+        const sign = side === 'left' ? 1 : -1;
+
+        ctx.save();
+        ctx.translate(upperArm.offsetX * sign, upperArm.offsetY);
+        ctx.rotate(-shoulderAngle * sign * 0.5);
+
+        ctx.fillStyle = this.colors.skin;
+        ctx.beginPath();
+        ctx.roundRect(-upperArm.width / 2, 0, upperArm.width, upperArm.length, 3);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(0, upperArm.length);
+        ctx.rotate(-elbowAngle * sign);
+
+        ctx.fillStyle = this.colors.skin;
+        ctx.beginPath();
+        ctx.roundRect(-lowerArm.width / 2, 0, lowerArm.width, lowerArm.length, 3);
+        ctx.fill();
+
+        ctx.fillStyle = this.colors.shoes;
+        ctx.beginPath();
+        ctx.roundRect(-lowerArm.width / 2 + 1, lowerArm.length - 5, lowerArm.width - 2, 5, 2);
+        ctx.fill();
+
+        ctx.restore();
+        ctx.restore();
+    }
+
+    drawLegs(ctx, isWalking, animationTime, direction) {
+        const isVertical = direction === 'up' || direction === 'down';
         const swing = isWalking ? Math.sin(animationTime) * 0.55 : 0;
         const kneeBend = isWalking ? Math.abs(Math.sin(animationTime)) * 0.6 : 0;
 
-        this.drawLeg(ctx, 'left', swing, kneeBend, isWalking, animationTime);
-        this.drawLeg(ctx, 'right', -swing, kneeBend, isWalking, animationTime);
+        if (isVertical) {
+            this.drawLeg(ctx, 'left', swing, kneeBend, isWalking, animationTime);
+            this.drawLeg(ctx, 'right', -swing, kneeBend, isWalking, animationTime);
+        } else {
+            this.drawLegSide(ctx, 'left', swing, kneeBend, isWalking, animationTime);
+            this.drawLegSide(ctx, 'right', -swing, kneeBend, isWalking, animationTime);
+        }
     }
 
     drawLeg(ctx, side, hipAngle, kneeBend, isWalking, animationTime) {
@@ -258,6 +285,61 @@ class PlayerRenderer {
         
         const footAngle = isWalking ? Math.sin(animationTime + (side === 'left' ? 0 : Math.PI)) * 0.3 : 0;
         ctx.rotate(footAngle);
+
+        ctx.fillStyle = this.colors.shoes;
+        ctx.beginPath();
+        ctx.roundRect(-foot.width / 2, 0, foot.length, foot.width, 2);
+        ctx.fill();
+
+        ctx.fillStyle = this.colors.shoesLight;
+        ctx.beginPath();
+        ctx.roundRect(-foot.width / 2 + 1, 1, foot.length - 2, 2, 1);
+        ctx.fill();
+
+        ctx.restore();
+        ctx.restore();
+        ctx.restore();
+    }
+
+    drawLegSide(ctx, side, hipAngle, kneeBend, isWalking, animationTime) {
+        const upperLeg = this.bodyConfig[side + 'UpperLeg'];
+        const lowerLeg = this.bodyConfig[side + 'LowerLeg'];
+        const foot = this.bodyConfig.foot;
+        const sign = side === 'left' ? 1 : -1;
+
+        ctx.save();
+        ctx.translate(upperLeg.offsetX * sign, upperLeg.offsetY);
+        ctx.rotate(-hipAngle * sign * 0.5);
+
+        ctx.fillStyle = this.colors.pants;
+        ctx.beginPath();
+        ctx.roundRect(-upperLeg.width / 2, 0, upperLeg.width, upperLeg.length, 4);
+        ctx.fill();
+
+        ctx.fillStyle = this.colors.pantsDark;
+        ctx.beginPath();
+        ctx.roundRect(-upperLeg.width / 2 + 2, 0, upperLeg.width - 4, upperLeg.length / 2, 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(0, upperLeg.length);
+        ctx.rotate(kneeBend * sign);
+
+        ctx.fillStyle = this.colors.pants;
+        ctx.beginPath();
+        ctx.roundRect(-lowerLeg.width / 2, 0, lowerLeg.width, lowerLeg.length, 4);
+        ctx.fill();
+
+        ctx.fillStyle = this.colors.pantsDark;
+        ctx.beginPath();
+        ctx.roundRect(-lowerLeg.width / 2 + 1.5, 0, lowerLeg.width - 3, lowerLeg.length / 2, 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(0, lowerLeg.length);
+
+        const footAngle = isWalking ? Math.sin(animationTime + (side === 'left' ? Math.PI : 0)) * 0.3 : 0;
+        ctx.rotate(-footAngle);
 
         ctx.fillStyle = this.colors.shoes;
         ctx.beginPath();
