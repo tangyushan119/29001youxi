@@ -152,11 +152,8 @@ class SurvivalGame {
     }
 
     resizeCanvas() {
-        const wrapper = document.querySelector('.game-canvas-wrapper');
-        const rect = wrapper.getBoundingClientRect();
-        const padding = 20;
-        this.canvas.width = rect.width - padding * 2;
-        this.canvas.height = rect.height - padding * 2;
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
     }
 
     setupEventListeners() {
