@@ -1,4 +1,5 @@
 import { InventoryStyle } from './inventory-style.js';
+import { ITEM_CATEGORIES } from './inventory-items.js';
 
 class InventoryInteraction {
     constructor(renderer, stacking) {
@@ -9,7 +10,7 @@ class InventoryInteraction {
         this.selectedItem = null;
         this.onCloseCallback = null;
         this.onItemUseCallback = null;
-        this.currentCategory = 'all';
+        this.currentCategory = ITEM_CATEGORIES.ALL;
     }
 
     setupEventListeners(modalElement, items, gridElement) {

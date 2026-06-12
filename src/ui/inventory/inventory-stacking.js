@@ -1,18 +1,16 @@
+import { InventoryItems } from './inventory-items.js';
+
 class InventoryStacking {
     constructor() {
-        this.maxStackSize = 99;
-        this.stackableTypes = ['seeds', 'food', 'water', 'wood', 'stone', 'grass', 'medicine', 'materials'];
+        this.defaultMaxStackSize = 99;
     }
 
     isStackable(itemType) {
-        return this.stackableTypes.includes(itemType);
+        return InventoryItems.isStackable(itemType);
     }
 
     getMaxStackSize(itemType) {
-        if (!this.isStackable(itemType)) {
-            return 1;
-        }
-        return this.maxStackSize;
+        return InventoryItems.getMaxStackSize(itemType);
     }
 
     stackItems(inventory) {
@@ -22,7 +20,7 @@ class InventoryStacking {
             if (count <= 0) continue;
             
             if (this.isStackable(itemType)) {
-                const maxStack = this.maxStackSize;
+                const maxStack = this.getMaxStackSize(itemType);
                 const fullStacks = Math.floor(count / maxStack);
                 const remainder = count % maxStack;
                 
@@ -70,7 +68,7 @@ class InventoryStacking {
             if (count <= 0) continue;
             
             if (this.isStackable(itemType)) {
-                slots += Math.ceil(count / this.maxStackSize);
+                slots += Math.ceil(count / this.getMaxStackSize(itemType));
             } else {
                 slots += count;
             }
@@ -81,7 +79,9 @@ class InventoryStacking {
 
     canAddItem(inventory, itemType, count, maxSlots = 40) {
         const currentSlots = this.getSlotsNeeded(inventory);
-        const newSlots = this.getSlotsNeeded({ ...inventory, [itemType]: (inventory[itemType] || 0) + count });
+        const newInventory = { ...inventory };
+        newInventory[itemType] = (newInventory[itemType] || 0) + count;
+        const newSlots = this.getSlotsNeeded(newInventory);
         
         return newSlots <= maxSlots;
     }
@@ -100,28 +100,29 @@ class InventoryStacking {
             return result;
         }
         
+        const maxStack = this.getMaxStackSize(newItemType);
         let remainingCount = newCount;
         
         for (const stack of result) {
             if (stack.type === newItemType && !stack.isFullStack && remainingCount > 0) {
-                const space = this.maxStackSize - stack.count;
+                const space = maxStack - stack.count;
                 const addAmount = Math.min(space, remainingCount);
                 
                 stack.count += addAmount;
                 remainingCount -= addAmount;
                 
-                if (stack.count >= this.maxStackSize) {
+                if (stack.count >= maxStack) {
                     stack.isFullStack = true;
                 }
             }
         }
         
         while (remainingCount > 0) {
-            const stackSize = Math.min(remainingCount, this.maxStackSize);
+            const stackSize = Math.min(remainingCount, maxStack);
             result.push({
                 type: newItemType,
                 count: stackSize,
-                isFullStack: stackSize >= this.maxStackSize
+                isFullStack: stackSize >= maxStack
             });
             remainingCount -= stackSize;
         }
@@ -134,16 +135,18 @@ class InventoryStacking {
             return [stack];
         }
         
+        const maxStack = this.getMaxStackSize(stack.type);
+        
         return [
             {
                 type: stack.type,
                 count: splitCount,
-                isFullStack: splitCount >= this.maxStackSize
+                isFullStack: splitCount >= maxStack
             },
             {
                 type: stack.type,
                 count: stack.count - splitCount,
-                isFullStack: (stack.count - splitCount) >= this.maxStackSize
+                isFullStack: (stack.count - splitCount) >= maxStack
             }
         ];
     }
@@ -157,25 +160,26 @@ class InventoryStacking {
             return [stack1, stack2];
         }
         
+        const maxStack = this.getMaxStackSize(stack1.type);
         const totalCount = stack1.count + stack2.count;
         
-        if (totalCount <= this.maxStackSize) {
+        if (totalCount <= maxStack) {
             return [{
                 type: stack1.type,
                 count: totalCount,
-                isFullStack: totalCount >= this.maxStackSize
+                isFullStack: totalCount >= maxStack
             }];
         }
         
         return [
             {
                 type: stack1.type,
-                count: this.maxStackSize,
+                count: maxStack,
                 isFullStack: true
             },
             {
                 type: stack1.type,
-                count: totalCount - this.maxStackSize,
+                count: totalCount - maxStack,
                 isFullStack: false
             }
         ];

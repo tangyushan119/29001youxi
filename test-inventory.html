@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背包系统测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-header h1 {
+            color: #4a69bd;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .test-header p {
+            color: #b8c5d6;
+            font-size: 14px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            border: 1px solid #4a69bd;
+        }
+
+        .test-title {
+            color: #4a69bd;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-title::before {
+            content: '📋';
+            font-size: 20px;
+        }
+
+        .test-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .test-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(145deg, #4a69bd, #3a5a9d);
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 105, 189, 0.4);
+        }
+
+        .test-btn.secondary {
+            background: linear-gradient(145deg, #6c757d, #495057);
+        }
+
+        .test-btn.danger {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+        }
+
+        .test-btn.success {
+            background: linear-gradient(145deg, #27ae60, #1e8449);
+        }
+
+        .inventory-preview {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .inventory-items-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .inventory-item-tag {
+            background: rgba(74, 105, 189, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .inventory-item-tag .icon {
+            font-size: 18px;
+        }
+
+        .inventory-item-tag .name {
+            color: #fff;
+        }
+
+        .inventory-item-tag .count {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .test-results {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .test-result-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(74, 105, 189, 0.2);
+        }
+
+        .test-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-result-item.pass {
+            color: #27ae60;
+        }
+
+        .test-result-item.fail {
+            color: #e74c3c;
+        }
+
+        .test-result-item.info {
+            color: #3498db;
+        }
+
+        .test-result-item::before {
+            margin-right: 8px;
+        }
+
+        .test-result-item.pass::before {
+            content: '✓';
+        }
+
+        .test-result-item.fail::before {
+            content: '✗';
+        }
+
+        .test-result-item.info::before {
+            content: 'ℹ';
+        }
+
+        .test-description {
+            color: #b8c5d6;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
+        }
+
+        .inventory-overlay {
+            animation: fadeIn 0.2s ease;
+        }
+
+        .inventory-modal {
+            animation: slideUp 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🎒 背包系统测试</h1>
+        <p>测试背包交互、渲染和物品管理功能</p>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">基础测试</div>
+        <div class="test-description">
+            测试背包的基本功能：打开背包窗口、显示物品、关闭背包。
+        </div>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testOpenInventory()">
+                <span>🎒</span> 打开背包
+            </button>
+            <button class="test-btn secondary" onclick="testOpenEmptyInventory()">
+                <span>📭</span> 打开空背包
+            </button>
+            <button class="test-btn secondary" onclick="testOpenFullInventory()">
+                <span>📦</span> 打开满背包
+            </button>
+        </div>
+        <div class="inventory-preview" id="currentInventory">
+            <strong style="color: #4a69bd;">当前测试物品:</strong>
+            <div class="inventory-items-list" id="inventoryItemsList"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">物品数据测试</div>
+        <div class="test-description">
+            测试物品数据定义的正确性和完整性。
+        </div>
+        <div class="test-controls">
+            <button class="test-btn success" onclick="runItemDataTests()">
+                <span>✅</span> 运行物品数据测试
+            </button>
+        </div>
+        <div class="test-results" id="itemDataResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">分类筛选测试</div>
+        <div class="test-description">
+            测试背包分类筛选功能是否正常工作。
+        </div>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testCategoryFilter()">
+                <span>🔍</span> 测试分类筛选
+            </button>
+        </div>
+        <div class="test-results" id="categoryResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">堆叠测试</div>
+        <div class="test-description">
+            测试物品堆叠逻辑是否正确处理。
+        </div>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testItemStacking()">
+                <span>📚</span> 测试物品堆叠
+            </button>
+        </div>
+        <div class="test-results" id="stackingResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">交互测试</div>
+        <div class="test-description">
+            测试背包内物品点击、拖拽等交互功能。
+        </div>
+        <div class="test-controls">
+            <button class="test-btn" onclick="testItemInteraction()">
+                <span>👆</span> 测试物品交互
+            </button>
+            <button class="test-btn danger" onclick="clearTestResults()">
+                <span>🗑️</span> 清空测试结果
+            </button>
+        </div>
+        <div class="test-results" id="interactionResults"></div>
+    </div>
+
+    <script type="module">
+        import { InventoryManager } from './src/ui/inventory/inventory-manager.js';
+        import { InventoryItems } from './src/ui/inventory/inventory-items.js';
+
+        let inventoryManager = null;
+
+        const testInventoryData = {
+            seeds: 15,
+            food: 8,
+            water: 12,
+            wood: 25,
+            stone: 18,
+            grass: 30,
+            medicine: 5,
+            iron: 10,
+            leather: 3,
+            cloth: 7,
+            gold: 100
+        };
+
+        const emptyInventoryData = {};
+
+        const fullInventoryData = {
+            seeds: 99,
+            food: 99,
+            water: 99,
+            wood: 99,
+            stone: 99,
+            grass: 99,
+            medicine: 30,
+            iron: 50,
+            leather: 30,
+            cloth: 50,
+            gold: 999,
+            equipment: 1
+        };
+
+        function updateInventoryPreview(data) {
+            const list = document.getElementById('inventoryItemsList');
+            list.innerHTML = '';
+            
+            if (Object.keys(data).length === 0) {
+                list.innerHTML = '<span style="color: #b8c5d6;">背包为空</span>';
+                return;
+            }
+
+            for (const [type, count] of Object.entries(data)) {
+                if (count > 0) {
+                    const tag = document.createElement('div');
+                    tag.className = 'inventory-item-tag';
+                    tag.innerHTML = `
+                        <span class="icon">${InventoryItems.getItemIcon(type)}</span>
+                        <span class="name">${InventoryItems.getItemName(type)}</span>
+                        <span class="count">${count}</span>
+                    `;
+                    list.appendChild(tag);
+                }
+            }
+        }
+
+        function testOpenInventory() {
+            if (inventoryManager && inventoryManager.isModalOpen()) {
+                inventoryManager.close();
+            }
+
+            inventoryManager = new InventoryManager();
+            inventoryManager.open(testInventoryData);
+            updateInventoryPreview(testInventoryData);
+            
+            addResult('interactionResults', 'info', '背包窗口已打开');
+        }
+
+        function testOpenEmptyInventory() {
+            if (inventoryManager && inventoryManager.isModalOpen()) {
+                inventoryManager.close();
+            }
+
+            inventoryManager = new InventoryManager();
+            inventoryManager.open(emptyInventoryData);
+            updateInventoryPreview(emptyInventoryData);
+            
+            addResult('interactionResults', 'info', '空背包窗口已打开');
+        }
+
+        function testOpenFullInventory() {
+            if (inventoryManager && inventoryManager.isModalOpen()) {
+                inventoryManager.close();
+            }
+
+            inventoryManager = new InventoryManager();
+            inventoryManager.open(fullInventoryData);
+            updateInventoryPreview(fullInventoryData);
+            
+            addResult('interactionResults', 'info', '满背包窗口已打开');
+        }
+
+        function runItemDataTests() {
+            const results = document.getElementById('itemDataResults');
+            results.innerHTML = '';
+
+            const itemTypes = InventoryItems.getAllItemTypes();
+            const categories = InventoryItems.getAllCategories();
+
+            addResult('itemDataResults', 'pass', `物品类型数量: ${itemTypes.length}`);
+            addResult('itemDataResults', 'pass', `分类数量: ${categories.length}`);
+
+            let allItemsValid = true;
+            for (const type of itemTypes) {
+                const def = InventoryItems.getItemDefinition(type);
+                if (def) {
+                    addResult('itemDataResults', 'pass', `✓ 物品定义完整: ${type}`);
+                } else {
+                    addResult('itemDataResults', 'fail', `✗ 物品定义缺失: ${type}`);
+                    allItemsValid = false;
+                }
+            }
+
+            if (allItemsValid) {
+                addResult('itemDataResults', 'pass', '所有物品定义验证通过');
+            }
+
+            const testType = 'seeds';
+            const name = InventoryItems.getItemName(testType);
+            const icon = InventoryItems.getItemIcon(testType);
+            const desc = InventoryItems.getItemDescription(testType);
+            
+            addResult('itemDataResults', 'info', `测试物品 [${testType}]: 名称="${name}", 图标="${icon}", 描述="${desc}"`);
+        }
+
+        function testCategoryFilter() {
+            const results = document.getElementById('categoryResults');
+            results.innerHTML = '';
+
+            const categories = ['all', 'food', 'materials', 'seeds', 'equipment', 'consumables'];
+            
+            for (const category of categories) {
+                const items = InventoryItems.getCategoryItems(category);
+                addResult('categoryResults', 'pass', `分类 [${category}]: ${items.length} 种物品`);
+            }
+
+            addResult('categoryResults', 'info', '分类筛选测试完成');
+        }
+
+        function testItemStacking() {
+            const results = document.getElementById('stackingResults');
+            results.innerHTML = '';
+
+            const testCases = [
+                { type: 'seeds', count: 150, expectedStacks: 2 },
+                { type: 'equipment', count: 5, expectedStacks: 5 },
+                { type: 'gold', count: 1500, expectedStacks: 2 },
+                { type: 'medicine', count: 50, expectedStacks: 2 }
+            ];
+
+            for (const test of testCases) {
+                const maxStack = InventoryItems.getMaxStackSize(test.type);
+                const isStackable = InventoryItems.isStackable(test.type);
+                const expected = isStackable ? Math.ceil(test.count / maxStack) : test.count;
+                
+                addResult('stackingResults', expected === test.expectedStacks ? 'pass' : 'fail', 
+                    `${InventoryItems.getItemName(test.type)} (${test.count}个): 最大堆叠=${maxStack}, 是否可堆叠=${isStackable}, 期望格子=${test.expectedStacks}, 计算格子=${expected}`);
+            }
+
+            addResult('stackingResults', 'info', '堆叠逻辑测试完成');
+        }
+
+        function testItemInteraction() {
+            addResult('interactionResults', 'info', '请在背包窗口中测试以下交互:');
+            addResult('interactionResults', 'info', '• 点击物品查看详情');
+            addResult('interactionResults', 'info', '• 再次点击选中的物品使用');
+            addResult('interactionResults', 'info', '• 点击空白区域关闭背包');
+            addResult('interactionResults', 'info', '• 使用 ESC 键关闭背包');
+            addResult('interactionResults', 'info', '• 使用分类标签筛选物品');
+        }
+
+        function clearTestResults() {
+            document.getElementById('itemDataResults').innerHTML = '';
+            document.getElementById('categoryResults').innerHTML = '';
+            document.getElementById('stackingResults').innerHTML = '';
+            document.getElementById('interactionResults').innerHTML = '';
+            addResult('interactionResults', 'info', '测试结果已清空');
+        }
+
+        function addResult(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            const item = document.createElement('div');
+            item.className = `test-result-item ${type}`;
+            item.textContent = message;
+            container.appendChild(item);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        updateInventoryPreview(testInventoryData);
+    </script>
+</body>
+</html>

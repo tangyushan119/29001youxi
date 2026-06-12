@@ -1,5 +1,6 @@
 import { PlayerRenderer } from './PlayerRenderer.js';
 import { Player } from './Player.js';
+import { InventoryManager } from '../ui/inventory/inventory-manager.js';
 
 class Scene {
     constructor(name) {
@@ -147,6 +148,7 @@ class GameScene extends Scene {
         this.playerRenderer = new PlayerRenderer();
         this.isPlayerWalking = false;
         this.walkAnimationFrame = null;
+        this.inventoryManager = null;
     }
 
     load() {
@@ -726,25 +728,40 @@ class GameScene extends Scene {
     }
 
     openInventory() {
-        if (!this.player || !this.game?.uiManager) return;
+        if (!this.player) return;
         
-        const inventory = this.player.inventory;
-        let content = `
-            <div style="color: #fff; font-size: 14px; line-height: 1.8;">
-                <p><strong>种子:</strong> ${inventory.seeds}</p>
-                <p><strong>食物:</strong> ${inventory.food}</p>
-                <p><strong>水:</strong> ${inventory.water}</p>
-                <p><strong>木材:</strong> ${inventory.wood}</p>
-                <p><strong>石头:</strong> ${inventory.stone}</p>
-                <p><strong>杂草:</strong> ${inventory.grass}</p>
-            </div>
-        `;
+        const inventoryData = { ...this.player.inventory };
         
-        this.game.uiManager.showModal({
-            title: '背包',
-            content,
-            buttons: [{ text: '关闭' }]
+        if (!this.inventoryManager) {
+            this.inventoryManager = new InventoryManager();
+        }
+        
+        this.inventoryManager.setOnCloseCallback((updatedInventory) => {
+            Object.assign(this.player.inventory, updatedInventory);
+            this.savePlayerToCache();
         });
+        
+        this.inventoryManager.setOnItemUseCallback((itemType, itemCount) => {
+            if (this.game?.uiManager) {
+                const itemNames = {
+                    seeds: '种子',
+                    food: '食物',
+                    water: '水',
+                    wood: '木材',
+                    stone: '石头',
+                    grass: '杂草',
+                    equipment: '装备',
+                    medicine: '药品',
+                    iron: '铁矿石',
+                    leather: '皮革',
+                    cloth: '布料',
+                    gold: '金币'
+                };
+                this.game.uiManager.showSuccess(`使用了 ${itemNames[itemType] || itemType} x${itemCount}`);
+            }
+        });
+        
+        this.inventoryManager.open(inventoryData);
     }
 
     openCraft() {

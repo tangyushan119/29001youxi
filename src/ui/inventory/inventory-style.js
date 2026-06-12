@@ -1,3 +1,5 @@
+import { InventoryItems } from './inventory-items.js';
+
 const InventoryStyle = {
     modal: {
         width: 640,
@@ -112,48 +114,30 @@ const InventoryStyle = {
     },
 
     getItemBackgroundColor(itemType) {
-        const colors = {
-            seeds: 'rgba(46, 204, 113, 0.3)',
-            food: 'rgba(241, 196, 15, 0.3)',
-            water: 'rgba(52, 152, 219, 0.3)',
-            wood: 'rgba(139, 69, 19, 0.3)',
-            stone: 'rgba(112, 128, 144, 0.3)',
-            grass: 'rgba(34, 139, 34, 0.3)',
-            equipment: 'rgba(155, 89, 182, 0.3)',
-            medicine: 'rgba(230, 126, 34, 0.3)',
-            materials: 'rgba(149, 165, 166, 0.3)'
-        };
-        return colors[itemType] || 'rgba(255, 255, 255, 0.1)';
+        return InventoryItems.getItemBackgroundColor(itemType);
     },
 
     getItemIcon(itemType) {
-        const icons = {
-            seeds: '🌱',
-            food: '🍞',
-            water: '💧',
-            wood: '🪵',
-            stone: '🪨',
-            grass: '🌿',
-            equipment: '⚔️',
-            medicine: '🧪',
-            materials: '📦'
-        };
-        return icons[itemType] || '📦';
+        return InventoryItems.getItemIcon(itemType);
     },
 
     getItemName(itemType) {
-        const names = {
-            seeds: '种子',
-            food: '食物',
-            water: '水',
-            wood: '木材',
-            stone: '石头',
-            grass: '杂草',
-            equipment: '装备',
-            medicine: '药品',
-            materials: '材料'
+        return InventoryItems.getItemName(itemType);
+    },
+
+    getItemDescription(itemType) {
+        return InventoryItems.getItemDescription(itemType);
+    },
+
+    getCategoryConfig() {
+        return {
+            all: { label: '全部', icon: '📦' },
+            food: { label: '食物', icon: '🍽️' },
+            materials: { label: '材料', icon: '⚒️' },
+            seeds: { label: '种子', icon: '🌱' },
+            equipment: { label: '装备', icon: '⚔️' },
+            consumables: { label: '消耗品', icon: '🧪' }
         };
-        return names[itemType] || itemType;
     }
 };
 
