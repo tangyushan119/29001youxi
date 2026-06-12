@@ -1,3 +1,5 @@
+import { PlayerRenderer } from './src/game/PlayerRenderer.js';
+
 class SurvivalGame {
     constructor() {
         this.canvas = document.getElementById('gameCanvas');

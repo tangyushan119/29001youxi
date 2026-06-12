@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人物模块加载测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #00d4ff;
+            margin-bottom: 30px;
+        }
+        
+        .test-result {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .test-result.success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+        
+        .test-result.error {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+        
+        .test-result.info {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        .test-icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        
+        .test-label {
+            font-weight: bold;
+            color: #b8c5d6;
+        }
+        
+        .test-message {
+            margin-left: 10px;
+            color: #fff;
+        }
+        
+        .canvas-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        #testCanvas {
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            background: #1a1a2e;
+        }
+        
+        .status-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            color: #b8c5d6;
+        }
+        
+        .status-value {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+        
+        .loading-text {
+            text-align: center;
+            color: #00d4ff;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 人物模块加载测试</h1>
+        
+        <div id="loadResults">
+            <div class="loading-text">正在加载模块...</div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="testCanvas" width="200" height="200"></canvas>
+            <p style="color: #b8c5d6; margin-top: 10px;">人物渲染测试</p>
+        </div>
+        
+        <div class="status-panel">
+            <div class="status-item">
+                <span class="status-label">Player模块:</span>
+                <span class="status-value" id="playerStatus">未加载</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">PlayerRenderer模块:</span>
+                <span class="status-value" id="rendererStatus">未加载</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">人物实例:</span>
+                <span class="status-value" id="instanceStatus">未创建</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">渲染状态:</span>
+                <span class="status-value" id="renderStatus">未渲染</span>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { Player } from './src/game/Player.js';
+        import { PlayerRenderer } from './src/game/PlayerRenderer.js';
+        
+        const loadResults = document.getElementById('loadResults');
+        
+        function addResult(message, type = 'success') {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            
+            let icon = '✅';
+            if (type === 'error') icon = '❌';
+            if (type === 'info') icon = 'ℹ️';
+            
+            resultDiv.innerHTML = `<span class="test-icon">${icon}</span><span class="test-label">${message}</span>`;
+            loadResults.appendChild(resultDiv);
+        }
+        
+        loadResults.innerHTML = '';
+        
+        try {
+            addResult('Player 模块加载成功');
+            document.getElementById('playerStatus').textContent = '✓ 已加载';
+            document.getElementById('playerStatus').style.color = '#00ff88';
+        } catch (error) {
+            addResult('Player 模块加载失败: ' + error.message, 'error');
+            document.getElementById('playerStatus').textContent = '✗ 加载失败';
+            document.getElementById('playerStatus').style.color = '#ff6b6b';
+        }
+        
+        try {
+            addResult('PlayerRenderer 模块加载成功');
+            document.getElementById('rendererStatus').textContent = '✓ 已加载';
+            document.getElementById('rendererStatus').style.color = '#00ff88';
+        } catch (error) {
+            addResult('PlayerRenderer 模块加载失败: ' + error.message, 'error');
+            document.getElementById('rendererStatus').textContent = '✗ 加载失败';
+            document.getElementById('rendererStatus').style.color = '#ff6b6b';
+        }
+        
+        let player, renderer;
+        
+        try {
+            player = new Player({ x: 84, y: 76 });
+            renderer = new PlayerRenderer();
+            
+            addResult('人物实例创建成功', 'info');
+            document.getElementById('instanceStatus').textContent = '✓ 已创建';
+            document.getElementById('instanceStatus').style.color = '#00ff88';
+        } catch (error) {
+            addResult('人物实例创建失败: ' + error.message, 'error');
+            document.getElementById('instanceStatus').textContent = '✗ 创建失败';
+            document.getElementById('instanceStatus').style.color = '#ff6b6b';
+        }
+        
+        try {
+            const canvas = document.getElementById('testCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#1e3a5f';
+            const tileSize = 20;
+            for (let x = 0; x < canvas.width; x += tileSize) {
+                for (let y = 0; y < canvas.height; y += tileSize) {
+                    if ((Math.floor(x / tileSize) + Math.floor(y / tileSize)) % 2 === 0) {
+                        ctx.fillRect(x, y, tileSize, tileSize);
+                    }
+                }
+            }
+            
+            renderer.draw(ctx, player.getCenterX(), player.getCenterY(), 'down', false, 0);
+            
+            addResult('人物渲染成功', 'info');
+            document.getElementById('renderStatus').textContent = '✓ 已渲染';
+            document.getElementById('renderStatus').style.color = '#00ff88';
+        } catch (error) {
+            addResult('人物渲染失败: ' + error.message, 'error');
+            document.getElementById('renderStatus').textContent = '✗ 渲染失败';
+            document.getElementById('renderStatus').style.color = '#ff6b6b';
+        }
+        
+        addResult('所有测试完成！', 'success');
+    </script>
+</body>
+</html>
