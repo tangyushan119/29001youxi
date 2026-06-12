@@ -197,19 +197,35 @@ class InventoryRenderer {
     }
 
     renderTooltip(x, y, itemType, itemCount) {
+        const tooltipWidth = this.style.tooltip.maxWidth;
+        const tooltipHeight = 80;
+        
+        let tooltipX = x + 10;
+        let tooltipY = y - 10;
+        
+        if (tooltipX + tooltipWidth > window.innerWidth) {
+            tooltipX = x - tooltipWidth - 10;
+        }
+        if (tooltipY < 0) {
+            tooltipY = y + 60;
+        }
+        if (tooltipY + tooltipHeight > window.innerHeight) {
+            tooltipY = window.innerHeight - tooltipHeight - 10;
+        }
+        
         const tooltip = document.createElement('div');
         tooltip.className = 'inventory-tooltip';
         
         tooltip.style.position = 'fixed';
-        tooltip.style.left = `${x + 10}px`;
-        tooltip.style.top = `${y - 10}px`;
-        tooltip.style.maxWidth = `${this.style.tooltip.maxWidth}px`;
-        tooltip.style.backgroundColor = this.style.tooltip.backgroundColor;
-        tooltip.style.border = `${this.style.tooltip.borderWidth}px solid ${this.style.tooltip.borderColor}`;
+        tooltip.style.left = `${tooltipX}px`;
+        tooltip.style.top = `${tooltipY}px`;
+        tooltip.style.width = `${tooltipWidth}px`;
+        tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.95)';
+        tooltip.style.border = `1px solid ${this.style.tooltip.borderColor}`;
         tooltip.style.borderRadius = `${this.style.tooltip.borderRadius}px`;
         tooltip.style.padding = `${this.style.tooltip.padding}px`;
         tooltip.style.fontSize = `${this.style.tooltip.fontSize}px`;
-        tooltip.style.color = this.style.tooltip.color;
+        tooltip.style.color = '#ffffff';
         tooltip.style.boxShadow = this.style.tooltip.boxShadow;
         tooltip.style.zIndex = 1001;
         tooltip.style.pointerEvents = 'none';
@@ -217,17 +233,19 @@ class InventoryRenderer {
         tooltip.style.transition = 'opacity 0.2s ease';
 
         const itemName = this.style.getItemName(itemType);
+        const itemIcon = this.style.getItemIcon(itemType);
+        const itemDesc = this.style.getItemDescription(itemType);
         
         tooltip.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
-                <span>${this.style.getItemIcon(itemType)}</span>
-                <span>${itemName}</span>
+            <div style="font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                <span style="font-size: 20px;">${itemIcon}</span>
+                <span style="color: #ffffff;">${itemName}</span>
             </div>
-            <div style="color: ${this.style.colors.textSecondary}; font-size: 12px;">
+            <div style="color: ${this.style.colors.textSecondary}; font-size: 12px; margin-bottom: 4px;">
                 数量: <span style="color: ${this.style.colors.accent}; font-weight: bold;">${itemCount}</span>
             </div>
-            <div style="color: ${this.style.colors.textSecondary}; font-size: 12px; margin-top: 4px;">
-                ${this.getItemDescription(itemType)}
+            <div style="color: ${this.style.colors.textSecondary}; font-size: 12px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                ${itemDesc}
             </div>
         `;
 
@@ -235,7 +253,7 @@ class InventoryRenderer {
         
         setTimeout(() => {
             tooltip.style.opacity = 1;
-        }, 50);
+        }, 30);
 
         return tooltip;
     }

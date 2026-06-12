@@ -354,35 +354,51 @@ class SimpleInventory {
         const rect = element.getBoundingClientRect();
         const itemConfig = this.itemConfig[itemType] || { name: itemType, icon: '📦', description: '普通物品' };
         
+        let tooltipX = rect.left + 10;
+        let tooltipY = rect.top - 10;
+        
+        const tooltipWidth = 220;
+        const tooltipHeight = 80;
+        
+        if (tooltipX + tooltipWidth > window.innerWidth) {
+            tooltipX = rect.left - tooltipWidth - 10;
+        }
+        if (tooltipY < 0) {
+            tooltipY = rect.bottom + 10;
+        }
+        if (tooltipY + tooltipHeight > window.innerHeight) {
+            tooltipY = window.innerHeight - tooltipHeight - 10;
+        }
+        
         const tooltip = document.createElement('div');
         tooltip.className = 'inventory-tooltip';
         tooltip.style.cssText = `
             position: fixed;
-            left: ${rect.left + 10}px;
-            top: ${rect.top - 10}px;
-            max-width: 220px;
-            background: rgba(0, 0, 0, 0.9);
+            left: ${tooltipX}px;
+            top: ${tooltipY}px;
+            width: ${tooltipWidth}px;
+            background: rgba(0, 0, 0, 0.95);
             border: 1px solid #4a69bd;
             border-radius: 8px;
             padding: 12px;
             font-size: 13px;
-            color: #fff;
+            color: #ffffff;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
             z-index: 10000;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s ease;
         `;
         
         tooltip.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
-                <span>${itemConfig.icon}</span>
-                <span>${itemConfig.name}</span>
+            <div style="font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #ffffff;">
+                <span style="font-size: 20px;">${itemConfig.icon}</span>
+                <span style="color: #ffffff;">${itemConfig.name}</span>
             </div>
-            <div style="color: #b8c5d6; font-size: 12px;">
+            <div style="color: #b8c5d6; font-size: 12px; margin-bottom: 4px;">
                 数量: <span style="color: #f39c12; font-weight: bold;">${itemCount}</span>
             </div>
-            <div style="color: #b8c5d6; font-size: 12px; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+            <div style="color: #b8c5d6; font-size: 12px; padding-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
                 ${itemConfig.description}
             </div>
         `;
@@ -391,7 +407,7 @@ class SimpleInventory {
         
         setTimeout(() => {
             tooltip.style.opacity = 1;
-        }, 50);
+        }, 30);
     }
 
     hideTooltip() {
